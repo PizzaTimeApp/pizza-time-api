@@ -2,4 +2,7 @@
 
 ## Description
 
-API proposant diverses options sur avec comme thème principal les pizzas.
+API proposant diverses options avec comme thème principal les pizzas.
+
+## Routes 
+

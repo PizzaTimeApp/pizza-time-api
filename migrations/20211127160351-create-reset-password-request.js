@@ -1,24 +1,28 @@
 'use strict';
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('Ingredients', {
+    await queryInterface.createTable('resetPasswordRequests', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      idIngredient: {
-        type: Sequelize.INTEGER
-      },
-      name: {
+      hashedToken: {
+        allowNull: false,
         type: Sequelize.STRING
       },
-      createdAt: {
+      requestedAt: {
+        allowNull: false,
         type: Sequelize.DATE
       },
-      updated: {
-        type: Sequelize.DATE
+      idUser: {
+        allowNull: false,
+        type: Sequelize.INTEGER,
+        references: {
+          model: 'users',
+          key: 'id'
+        }
       },
       createdAt: {
         allowNull: false,
@@ -31,6 +35,6 @@ module.exports = {
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('Ingredients');
+    await queryInterface.dropTable('resetPasswordRequests');
   }
 };
