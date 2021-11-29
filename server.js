@@ -3,6 +3,9 @@ var express = require('express');
 const path = require('path');
 var bodyParse =  require('body-parser');
 var userController = require('./routes/userController');
+var pizzaController = require('./routes/pizzaController');
+var ingredientController = require('./routes/ingredientController');
+var reservationController = require('./routes/reservationController');
 
 
 // Initialize Server
@@ -28,10 +31,9 @@ server.get("/", function(req, res) {
 
 // Default Route
 server.use('/api/user', userController);
-
-
-// User Route
-server.use('/api/user', userController);
+server.use('/api/pizza', pizzaController);
+server.use('/api/ingredient', ingredientController);
+server.use('/api/reservation', reservationController);
 
 server.listen("8100", function() {
     console.log("Server running");
