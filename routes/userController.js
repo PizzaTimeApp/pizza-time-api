@@ -141,6 +141,7 @@ router.post("/register", (req, res) => {
     function (newUser) {
       if (newUser) {
         return res.status(201).json({
+          success: true,
           userId: newUser.id,
         });
       } else {
@@ -172,6 +173,7 @@ router.post("/login", (req, res) => {
           function (errBycrypt, resBycrypt) {
             if (resBycrypt) {
               return res.status(200).json({
+                success: true,
                 userID: userFound.id,
                 token: jwtUtils.generateTokenForUser(userFound),
               });
@@ -217,7 +219,10 @@ router.get("/profile", (req, res) => {
     })
     .then(function (user) {
       if (user) {
-        res.status(201).json(user);
+        res.status(201).json({
+          success: true,
+          user: user
+        });
       } else {
         res.status(404).json({ error: "user not found" });
       }
@@ -303,7 +308,7 @@ router.put("/profile", (req, res) => {
                 where: { id: userId },
             })
             .then(function (userFound) {
-                done(null, userFound);
+              done(null, userFound)
             })
             .catch(function (err) {
                 return res.status(500).json({ error: "unable to verify user" });
@@ -325,7 +330,11 @@ router.put("/profile", (req, res) => {
                 zip: zip ? zip : userFound.zip,
                 })
                 .then(function () {
-                done(userFound);
+                  const request = {
+                    success: true,
+                    userFound: userFound
+                  }
+                  done(res.json(request));
                 })
                 .catch(function (err) {
                 console.log(err);
@@ -377,7 +386,6 @@ router.put("/updatepassword", (req, res) => {
             .findOne({
                 attributes: [
                 `id`,
-                `password`,
                 ],
                 where: { id: userId },
             })
@@ -402,10 +410,14 @@ router.put("/updatepassword", (req, res) => {
                 password: bcryptedPassword ? bcryptedPassword : userFound.password,
                 })
                 .then(function () {
-                done(userFound);
+                  const request = {
+                    success: true,
+                    userId: userId,
+                    updatedAt: userFound.updatedAt
+                  }
+                  done(res.json(request));
                 })
                 .catch(function (err) {
-                console.log(err);
                 res.status(500).json({ error: "cannot update user passsword" });
                 });
             }
@@ -420,4 +432,62 @@ router.put("/updatepassword", (req, res) => {
         }
     );
 });
+
+// User Delete
+router.delete("/profile", (req, res) => {
+  // Getting auth header
+  var headerAuth = req.headers["authorization"];
+  var userId = jwtUtils.getUserId(headerAuth);
+
+  if (userId < 0) {
+  return res.status(400).json({ error: "wrong token" });
+  }
+
+  asyncLib.waterfall(
+      [
+      function (done) {
+          models.user
+          .findOne({
+              attributes: [
+              `id`,
+              ],
+              where: { id: userId },
+          })
+          .then(function (userFound) {
+              done(null, userFound);
+          })
+          .catch(function (err) {
+              return res.status(500).json({ error: "unable to verify user" });
+          });
+      },
+      function (userFound, done) {
+          if (userFound) {
+              userFound.destroy({
+                where:{
+                  id: userId
+                }
+              })
+              .then(function () {
+                const request = {
+                  success: true,
+                  userId: userId,
+                }
+                done(res.json(request));
+              })
+              .catch(function (err) {
+              res.status(500).json({ error: "cannot delete user" });
+              });
+          }
+      },
+      ],
+      function (userFound) {
+          if (userFound) {
+              return res.status(201).json(userFound);
+          } else {
+              return res.status(500).json({ error: "cannot delete user" });
+          }
+      }
+  );
+});
+
 module.exports = router;
