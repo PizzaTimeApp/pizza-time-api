@@ -18,11 +18,18 @@ module.exports = (sequelize, DataTypes) => {
       // });
       // models.reservation.hasOne(models.pizza)
       // });
-
+      
+      models.reservation.belongsTo(models.pizza, { 
+        onDelete: 'Cascade',
+        foreignKey: 'idPizza'
+      });
+      models.reservation.belongsTo(models.user, { 
+        onDelete: 'cascade',
+        foreignKey: 'idUser'
+      });
     }
   };
   reservation.init({
-    reservationDate: DataTypes.DATE,
     quantity: DataTypes.INTEGER,
     idPizza: DataTypes.INTEGER,
     idUser: DataTypes.INTEGER

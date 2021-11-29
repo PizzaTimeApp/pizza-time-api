@@ -329,12 +329,8 @@ router.put("/profile", (req, res) => {
                 city: city ? city : userFound.city,
                 zip: zip ? zip : userFound.zip,
                 })
-                .then(function () {
-                  const request = {
-                    success: true,
-                    userFound: userFound
-                  }
-                  done(res.json(request));
+                .then(function (userFound) {
+                  done(userFound);
                 })
                 .catch(function (err) {
                 console.log(err);
@@ -345,7 +341,11 @@ router.put("/profile", (req, res) => {
         ],
         function (userFound) {
             if (userFound) {
-                return res.status(201).json(userFound);
+              const request = {
+                    success: true,
+                    userFound: userFound
+                  }
+                return res.status(201).json(request);
             } else {
                 return res.status(500).json({ error: "cannot update user profile" });
             }
@@ -409,13 +409,9 @@ router.put("/updatePassword", (req, res) => {
                 userFound.update({
                 password: bcryptedPassword ? bcryptedPassword : userFound.password,
                 })
-                .then(function () {
-                  const request = {
-                    success: true,
-                    userId: userId,
-                    updatedAt: userFound.updatedAt
-                  }
-                  done(res.json(request));
+                .then(function (userFound) {
+                  
+                  done(userFound);
                 })
                 .catch(function (err) {
                 res.status(500).json({ error: "cannot update user passsword" });
@@ -425,7 +421,12 @@ router.put("/updatePassword", (req, res) => {
         ],
         function (userFound) {
             if (userFound) {
-                return res.status(201).json(userFound);
+              const request = {
+                success: true,
+                userId: userId,
+                updatedAt: userFound.updatedAt
+              }
+                return res.status(201).json(request);
             } else {
                 return res.status(500).json({ error: "cannot update user password" });
             }
@@ -467,22 +468,25 @@ router.delete("/profile", (req, res) => {
                   id: userId
                 }
               })
-              .then(function () {
-                const request = {
-                  success: true,
-                  userId: userId,
-                }
-                done(res.json(request));
+              .then(function (userFound) {
+                done(userFound);
               })
               .catch(function (err) {
+                console.log(err);
               res.status(500).json({ error: "cannot delete user" });
               });
-          }
+          }else {
+            return res.status(200).json({ error: "user not exist" });
+        }
       },
       ],
       function (userFound) {
           if (userFound) {
-              return res.status(201).json(userFound);
+            const request = {
+              success: true,
+              userId: userId,
+            }
+              return res.status(201).json(request);
           } else {
               return res.status(500).json({ error: "cannot delete user" });
           }

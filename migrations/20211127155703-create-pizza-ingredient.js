@@ -11,6 +11,7 @@ module.exports = {
       idPizza: {
         allowNull: false,
         type: Sequelize.INTEGER,
+        onDelete: 'CASCADE',
         references: {
           model: 'pizzas',
           key: 'id'
@@ -19,6 +20,7 @@ module.exports = {
       idIngredient: {
         allowNull: false,
         type: Sequelize.INTEGER,
+        onDelete: 'CASCADE',
         references: {
           model: 'ingredients',
           key: 'id'

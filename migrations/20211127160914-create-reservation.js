@@ -8,10 +8,6 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      reservationDate: {
-        allowNull: false,
-        type: Sequelize.DATE
-      },
       quantity: {
         allowNull: false,
         type: Sequelize.INTEGER
@@ -19,6 +15,7 @@ module.exports = {
       idPizza: {
         allowNull: false,
         type: Sequelize.INTEGER,
+        onDelete: 'CASCADE',
         references: {
           model: 'pizzas',
           key: 'id'
@@ -27,6 +24,7 @@ module.exports = {
       idUser: {
         allowNull: false,
         type: Sequelize.INTEGER,
+        onDelete: 'CASCADE',
         references: {
           model: 'users',
           key: 'id'
