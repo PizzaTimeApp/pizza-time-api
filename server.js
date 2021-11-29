@@ -31,9 +31,9 @@ server.get("/", function(req, res) {
 
 // Default Route
 server.use('/api/user', userController);
-server.use('/api/pizza', pizzaController);
+// server.use('/api/pizza', pizzaController);
 server.use('/api/ingredient', ingredientController);
-server.use('/api/reservation', reservationController);
+// server.use('/api/reservation', reservationController);
 
 server.listen("8100", function() {
     console.log("Server running");
