@@ -10,12 +10,12 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      models.pizzaIngredient.hasOne(models.pizza), {
-        foreignKey: "idPizza"
-      };
-      models.pizzaIngredient.hasOne(models.ingredient, {
-        foreignKey: 'idIngredient'
-      });
+      // models.pizzaIngredient.hasOne(models.pizza), {
+      //   foreignKey: "idPizza"
+      // };
+      // models.pizzaIngredient.hasOne(models.ingredient, {
+      //   foreignKey: 'idIngredient'
+      // });
     }
   };
   pizzaIngredient.init({

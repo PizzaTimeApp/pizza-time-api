@@ -11,8 +11,12 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // models.user.hasMany(models.resetPasswordRequest);
-      models.user.hasMany(models.reservation);
-      models.user.hasMany(models.resetPasswordRequest);
+      // models.user.hasMany(models.reservation);
+      // models.user.hasMany(models.resetPasswordRequest);
+      models.user.hasMany(models.reservation, {
+        onDelete: 'cascade',
+        foreignKey: 'id'
+      });
       // models.user.belongsToMany(Pizza, { through: 'reservation' });
     }
   };

@@ -1,12 +1,15 @@
 // Import 
-var express = require('express');
+const express = require('express');
 const path = require('path');
-var bodyParse =  require('body-parser');
-var userController = require('./routes/userController');
+const bodyParse =  require('body-parser');
+const userController = require('./routes/userController');
+const pizzaController = require('./routes/pizzaController');
+const ingredientController = require('./routes/ingredientController');
+const reservationController = require('./routes/reservationController');
 
 
 // Initialize Server
-var server = express();
+const server = express();
 
 // Body Parser Configuration
 // server.use(bodyParse.urlencoded({ extended: true}));
@@ -28,10 +31,9 @@ server.get("/", function(req, res) {
 
 // Default Route
 server.use('/api/user', userController);
-
-
-// User Route
-server.use('/api/user', userController);
+// server.use('/api/pizza', pizzaController);
+server.use('/api/ingredient', ingredientController);
+server.use('/api/reservation', reservationController);
 
 server.listen("8100", function() {
     console.log("Server running");

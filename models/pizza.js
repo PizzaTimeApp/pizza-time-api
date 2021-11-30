@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // models.pizza.hasOne(models.reservation, {
       //   foreignKey: 'idPizza'
       // });
-      models.pizza.hasMany(models.reservation);
+      // models.pizza.hasMany(models.reservation);
       // models.pizza.belongsToMany(User, { through: 'reservation' });
       models.pizza.hasMany(models.pizzaIngredient);
     }
