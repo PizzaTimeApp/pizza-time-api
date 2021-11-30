@@ -472,7 +472,6 @@ router.delete("/profile", (req, res) => {
                 done(userFound);
               })
               .catch(function (err) {
-                console.log(err);
               res.status(500).json({ error: "cannot delete user" });
               });
           }else {

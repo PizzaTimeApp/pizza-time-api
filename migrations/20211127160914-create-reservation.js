@@ -12,6 +12,10 @@ module.exports = {
         allowNull: false,
         type: Sequelize.INTEGER
       },
+      orderNumber: {
+        allowNull: false,
+        type: Sequelize.STRING
+      },
       idPizza: {
         allowNull: false,
         type: Sequelize.INTEGER,

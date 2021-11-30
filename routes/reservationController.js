@@ -84,7 +84,11 @@ router.get('/myReservation',(req,res)=>{
     }]
   }).then(function (reservation) {
       if (reservation) {
-          res.status(200).json(reservation);
+        const request = {
+          success:true,
+          reservation : reservation
+        }
+        return res.status(200).json(request);
       } else {
           res.json({'error':'no reservation found'});
       }

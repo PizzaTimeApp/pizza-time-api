@@ -120,14 +120,14 @@ router.get('/getIngredient/:id',(req,res)=>{
 
 
 // User Delete
-router.delete("/deleteIngredient", (req, res) => {
+router.delete("/deleteIngredient/:id", (req, res) => {
   // Getting auth header
-  var headerAuth = req.headers["authorization"];
-  var isAdmin = jwtUtils.getIsAdmin(headerAuth);
+  const headerAuth = req.headers["authorization"];
+  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
 
   if (isAdmin != "admin") { return res.status(400).json({ 'error': 'no Admin' })}
 
-  var idIngredient = req.body.idIngredient;
+  const idIngredient = req.params.id;
 
   asyncLib.waterfall([
       function (done) {
