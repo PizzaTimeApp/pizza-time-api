@@ -11,7 +11,7 @@ router.post("/createIngredient", (req, res) => {
   const isAdmin = jwtUtils.getIsAdmin(headerAuth);
   const name = req.body.name;
 
-  if (isAdmin != "admin") return res.json({ error: "Not admin user" });
+  if (isAdmin != "admin") return res.json({ error: "no Admin" });
 
   asyncLib.waterfall(
     [
