@@ -1,4 +1,5 @@
 const express = require('express');
+const app = express();
 const router = express.Router();
 const models = require("../models");
 const jwtUtils = require('../utils/jwt.utils');
@@ -53,7 +54,8 @@ router.post('/createReservation',(req, res) =>{
         models.reservation.create({
           idPizza: pizzaId,
           idUser:userId,
-          quantity:quantity
+          quantity:quantity,
+          // orderNumber: 
         })
         .then(function (newReservation) {
             done(newReservation);
@@ -77,12 +79,13 @@ router.post('/createReservation',(req, res) =>{
 
 
 
-//get my reservation
+// Get My Reservations
 router.get('/myReservation',(req,res)=>{
   const limit = parseInt(req.query.limit);
   const offset = parseInt(req.query.offset);
   const order = req.query.order;
 
+  // Getting auth header
   const headerAuth = req.headers['authorization'];
   const userId = jwtUtils.getUserId(headerAuth);
 
@@ -141,60 +144,252 @@ router.get('/myReservation',(req,res)=>{
     ]
   );
 });
-/*
-// User Delete
-router.delete("/deleteIngredient", (req, res) => {
+
+// Get Reservation
+router.get("/getReservation/:id", (req, res) => {
+  const idReservation = req.params.id;
+  const headerAuth = req.headers["authorization"];
+  const userId = jwtUtils.getUserId(headerAuth);
+
+  if (idReservation == undefined || idReservation == null || idReservation == "")
+    return res.json({ error: " id not defined" });
+
+  if (userId < 0) {
+    return res.status(400).json({ error: "wrong token" });
+  }
+
+  models.reservation
+    .findOne({
+      where: {
+        id: idReservation,
+        idUser: userId
+      },
+    })
+    .then(function (reservationFound) {
+      if (reservationFound) {
+        res.status(200).json({
+          success: true,
+          reservations: reservationFound,
+        });
+      } else {
+        res.json({ error: "no user reservation found" });
+      }
+    })
+    .catch(function (err) {
+      console.log(err);
+      return res.json({ error: "unable to verify reservation" });
+    });
+});
+
+// Get all Reservations
+router.get("/getReservations", (req, res) => {
   // Getting auth header
-  var headerAuth = req.headers["authorization"];
-  var isAdmin = jwtUtils.getIsAdmin(headerAuth);
+  const headerAuth = req.headers["authorization"];
+  const userId = jwtUtils.getUserId(headerAuth);
 
-  if (isAdmin != "admin") { return res.status(400).json({ 'error': 'no Admin' })}
+  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
 
-  var idIngredient = req.body.idIngredient;
+  if (isAdmin != "admin") {
+    return res.status(400).json({ error: "no Admin" });
+  }
 
-  asyncLib.waterfall([
+  const limit = parseInt(req.query.limit);
+  const offset = parseInt(req.query.offset);
+  const order = req.query.order;
+
+  models.reservation
+    .findAll({
+      order: [order != null ? order.split(":") : ["orderNumber", "ASC"]],
+      limit: !isNaN(limit) ? limit : null,
+      offset: !isNaN(offset) ? offset : null,
+    })
+    .then(function (reservations) {
+      if (reservations) {
+        res.status(200).json({
+          success: true,
+          reservations: reservations,
+        });
+      } else {
+        res.json({ error: "no reservations found" });
+      }
+    })
+    .catch(function (err) {
+      console.log(err);
+      res.json({ error: "invalid fields" });
+    });
+});
+
+// Get all User Reservations
+router.get("/getUsersReservations/:id", (req, res) => {
+  // Getting auth header
+  const headerAuth = req.headers["authorization"];
+  const idUser = req.params.id;
+  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
+
+  if (idUser == undefined || idUser == null || idUser == "")
+    return res.json({ error: " id not defined" });
+
+
+  if (isAdmin != "admin") {
+    return res.status(400).json({ error: "no Admin" });
+  }
+
+  const limit = parseInt(req.query.limit);
+  const offset = parseInt(req.query.offset);
+  const order = req.query.order;
+
+  models.reservation
+    .findAll({
+      order: [order != null ? order.split(":") : ["orderNumber", "ASC"]],
+      limit: !isNaN(limit) ? limit : null,
+      offset: !isNaN(offset) ? offset : null,
+      where: {
+        idUser: idUser,
+      }
+    })
+    .then(function (reservations) {
+      if (reservations) {
+        res.status(200).json({
+          success: true,
+          reservations: reservations,
+        });
+      } else {
+        res.json({ error: "no user reservations found" });
+      }
+    })
+    .catch(function (err) {
+      console.log(err);
+      res.json({ error: "invalid fields" });
+    });
+});
+
+// User Reservation Delete
+router.delete("/deleteMyReservation/:id", (req, res) => {
+  // Getting auth header
+  const headerAuth = req.headers["authorization"];
+  const userId = jwtUtils.getUserId(headerAuth);
+  const idReservation = req.params.id;
+
+  if (userId < 0) {
+    return res.status(400).json({ error: "wrong token" });
+  }
+
+  asyncLib.waterfall(
+    [
       function (done) {
-          models.ingredient.findOne({
-              where: { id: idIngredient },
+        models.reservation
+          .findOne({
+            where: { 
+              id: idReservation,
+              idUser: userId
+            },
           })
-          .then(function (ingredientFound) {
-              done(null, ingredientFound);
+          .then(function (reservationFound) {
+            done(null, reservationFound);
           })
           .catch(function (err) {
             console.log(err);
-              return res.status(500).json({ error: "unable to verify ingredient" });
+            return res
+              .status(500)
+              .json({ error: "unable to verify my reservation" });
           });
       },
-      function (ingredientFound, done) {
-          if (ingredientFound) {
-            ingredientFound.destroy({
-                where:{
-                  id: idIngredient
-                }
-              })
-              .then(function () {
-                const request = {
-                  success: true,
-                  idIngredient: idIngredient,
-                }
-                done(res.json(request));
-              })
-              .catch(function (err) {
-              res.status(500).json({ error: "cannot delete ingredient" });
-              });
-          }else {
-            return res.status(200).json({ error: "ingredient not exist" });
+      function (reservationFound, done) {
+        if (reservationFound) {
+          reservationFound
+            .destroy({
+              where: {
+                id: idReservation,
+              },
+            })
+            .then(function (reservationFound) {
+              done(reservationFound);
+            })
+            .catch(function (err) {
+              res.status(500).json({ error: "cannot delete my reservation" });
+            });
+        } else {
+          return res.status(200).json({ error: "reservation not exist" });
         }
       },
-      ],
-      function (ingredientFound) {
-          if (ingredientFound) {
-              return res.status(201).json(ingredientFound);
-          } else {
-              return res.status(500).json({ error: "cannot delete ingredient" });
-          }
+    ],
+    function (reservationFound) {
+      if (reservationFound) {
+        const request = {
+          success: true,
+          idReservation: idReservation,
+        };
+        return res.status(201).json(request);
+      } else {
+        return res.status(500).json({ error: "cannot delete my reservation" });
       }
+    }
   );
 });
-*/
+
+
+// User Reservation Delete
+router.delete("/deleteReservation/:id", (req, res) => {
+  // Getting auth header
+  const headerAuth = req.headers["authorization"];
+  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
+
+  if (isAdmin != "admin") {
+    return res.status(400).json({ error: "no Admin" });
+  }
+
+  const idReservation = req.params.id;
+
+  asyncLib.waterfall(
+    [
+      function (done) {
+        models.reservation
+          .findOne({
+            where: { 
+              id: idReservation,
+            },
+          })
+          .then(function (reservationFound) {
+            done(null, reservationFound);
+          })
+          .catch(function (err) {
+            console.log(err);
+            return res
+              .status(500)
+              .json({ error: "unable to verify my reservation" });
+          });
+      },
+      function (reservationFound, done) {
+        if (reservationFound) {
+          reservationFound
+            .destroy({
+              where: {
+                id: idReservation,
+              },
+            })
+            .then(function (reservationFound) {
+              done(reservationFound);
+            })
+            .catch(function (err) {
+              res.status(500).json({ error: "cannot delete my reservation" });
+            });
+        } else {
+          return res.status(200).json({ error: "reservation not exist" });
+        }
+      },
+    ],
+    function (reservationFound) {
+      if (reservationFound) {
+        const request = {
+          success: true,
+          idReservation: idReservation,
+        };
+        return res.status(201).json(request);
+      } else {
+        return res.status(500).json({ error: "cannot delete my reservation" });
+      }
+    }
+  );
+});
+
 module.exports = router;
