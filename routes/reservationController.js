@@ -17,7 +17,26 @@ router.post('/createReservation',(req, res) =>{
   }
   
   asyncLib.waterfall([
-    function(done){
+    function (done) {
+      models.user
+      .findOne({
+          attributes: [
+          `id`,
+          ],
+          where: { id: userId },
+      })
+      .then(function (userFound) {
+        if(userFound) {
+          done(null, userFound);
+        } else {
+          return res.status(500).json({ error: "user not exist in DB" });
+        }
+      })
+      .catch(function (err) {
+          return res.status(500).json({ error: "unable to verify user" });
+      });
+    },
+    function(userFound, done){
       models.pizza.findOne({
         where: {id: pizzaId}
       })
@@ -71,31 +90,56 @@ router.get('/myReservation',(req,res)=>{
     return res.status(400).json({ error: "wrong token" });
   }
 
-  models.reservation.findAll({
-      order:[(order!=null)? order.split(':'): ['title','ASC']],
-      limit:(!isNaN(limit))? limit :null,
-      offset:(!isNaN(offset))? offset: null,
-      include: [{
-          model:models.pizza,
-          attributes: ['id','name', 'price','image','content']
-      },{
-        model:models.user,
-        attributes: ['id','username']
-    }]
-  }).then(function (reservation) {
-      if (reservation) {
-        const request = {
-          success:true,
-          reservation : reservation
+  asyncLib.waterfall(
+    [
+    function (done) {
+      models.user
+      .findOne({
+          attributes: [
+          `id`,
+          ],
+          where: { id: userId },
+      })
+      .then(function (userFound) {
+        if(userFound) {
+          done(null, userFound);
+        } else {
+          return res.status(500).json({ error: "user not exist in DB" });
         }
-        return res.status(200).json(request);
-      } else {
-          res.json({'error':'no reservation found'});
-      }
-  }).catch( function (err) {
-      console.log(err);
-      res.json({'error':'invalid fields'});
-  });
+      })
+      .catch(function (err) {
+          return res.status(500).json({ error: "unable to verify user" });
+      });
+    },
+    function (userFound) {
+      models.reservation.findAll({
+          order:[(order!=null)? order.split(':'): ['title','ASC']],
+          limit:(!isNaN(limit))? limit :null,
+          offset:(!isNaN(offset))? offset: null,
+          include: [{
+              model:models.pizza,
+              attributes: ['id','name', 'price','image','content']
+          },{
+            model:models.user,
+            attributes: ['id','username']
+          }]
+        }).then(function (reservation) {
+          if (reservation) {
+            const request = {
+              success:true,
+              reservation : reservation
+            }
+            return res.status(200).json(request);
+          } else {
+              res.json({'error':'no reservation found'});
+          }
+          }).catch( function (err) {
+              console.log(err);
+              res.json({'error':'invalid fields'});
+          });
+      },
+    ]
+  );
 });
 /*
 // User Delete

@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const jwtUtils = require("../utils/jwt.utils");
+const emailSender = require("../utils/email.utils");
 const models = require("../models");
 const asyncLib = require("async");
 
@@ -17,18 +18,18 @@ const PHONE_REGEX = /^\d*$/;
 // User Register
 router.post("/register", (req, res) => {
   // Params
-  var email = req.body.email;
-  var firstname = req.body.firstname;
-  var lastname = req.body.lastname;
-  var username = req.body.username;
-  var password = req.body.password;
-  var confirmPassword = req.body.confirmPassword;
-  var gender = req.body.gender;
-  var dateOfBirth = req.body.dateOfBirth;
-  var phone = req.body.phone;
-  var address = req.body.address;
-  var city = req.body.city;
-  var zip = req.body.zip;
+  const email = req.body.email;
+  const firstname = req.body.firstname;
+  const lastname = req.body.lastname;
+  const username = req.body.username;
+  const password = req.body.password;
+  const confirmPassword = req.body.confirmPassword;
+  const gender = req.body.gender;
+  const dateOfBirth = req.body.dateOfBirth;
+  const phone = req.body.phone;
+  const address = req.body.address;
+  const city = req.body.city;
+  const zip = req.body.zip;
 
   userForm = [
     email,
@@ -116,7 +117,7 @@ router.post("/register", (req, res) => {
         }
       },
       function (userFound, bcryptedPassword, done) {
-        var newUser = models.user
+        const newUser = models.user
           .create({
             email: email,
             firstname: firstname,
@@ -154,8 +155,8 @@ router.post("/register", (req, res) => {
 // User Login
 router.post("/login", (req, res) => {
   // Params
-  var email = req.body.email;
-  var password = req.body.password;
+  const email = req.body.email;
+  const password = req.body.password;
 
   if (email == null || password == null || email == "" || password == "") {
     return res.status(400).json({ error: "missing parameters" });
@@ -174,7 +175,7 @@ router.post("/login", (req, res) => {
             if (resBycrypt) {
               return res.status(200).json({
                 success: true,
-                userID: userFound.id,
+                userId: userFound.id,
                 token: jwtUtils.generateTokenForUser(userFound),
               });
             } else {
@@ -193,8 +194,8 @@ router.post("/login", (req, res) => {
 
 // User Profile
 router.get("/profile", (req, res) => {
-  var headerAuth = req.headers["authorization"];
-  var userId = jwtUtils.getUserId(headerAuth);
+  const headerAuth = req.headers["authorization"];
+  const userId = jwtUtils.getUserId(headerAuth);
 
   if (userId < 0) {
     return res.status(400).json({ error: "wrong token" });
@@ -235,24 +236,24 @@ router.get("/profile", (req, res) => {
 // User Update Profile
 router.put("/profile", (req, res) => {
     // Getting auth header
-    var headerAuth = req.headers["authorization"];
-    var userId = jwtUtils.getUserId(headerAuth);
+    const headerAuth = req.headers["authorization"];
+    const userId = jwtUtils.getUserId(headerAuth);
 
     if (userId < 0) {
     return res.status(400).json({ error: "wrong token" });
     }
 
     // Params
-    var email = req.body.email;
-    var username = req.body.username;
-    var firstname = req.body.firstname;
-    var lastname = req.body.lastname;
-    var dateOfBirth = req.body.dateOfBirth;
-    var gender = req.body.gender;
-    var phone = req.body.phone;
-    var address = req.body.address;
-    var city = req.body.city;
-    var zip = req.body.zip;
+    const email = req.body.email;
+    const username = req.body.username;
+    const firstname = req.body.firstname;
+    const lastname = req.body.lastname;
+    const dateOfBirth = req.body.dateOfBirth;
+    const gender = req.body.gender;
+    const phone = req.body.phone;
+    const address = req.body.address;
+    const city = req.body.city;
+    const zip = req.body.zip;
 
     if (username.length < 3 || username.length >= 17) {
         return res
@@ -356,16 +357,16 @@ router.put("/profile", (req, res) => {
 // User Update Password
 router.put("/updatePassword", (req, res) => {
     // Getting auth header
-    var headerAuth = req.headers["authorization"];
-    var userId = jwtUtils.getUserId(headerAuth);
+    const headerAuth = req.headers["authorization"];
+    const userId = jwtUtils.getUserId(headerAuth);
 
     if (userId < 0) {
     return res.status(400).json({ error: "wrong token" });
     }
 
     // Params
-    var password = req.body.password;
-    var confirmPassword = req.body.confirmPassword;
+    const password = req.body.password;
+    const confirmPassword = req.body.confirmPassword;
 
     if (!PASSWORD_REGEX.test(password)) {
         return res
@@ -437,8 +438,8 @@ router.put("/updatePassword", (req, res) => {
 // User Delete
 router.delete("/profile", (req, res) => {
   // Getting auth header
-  var headerAuth = req.headers["authorization"];
-  var userId = jwtUtils.getUserId(headerAuth);
+  const headerAuth = req.headers["authorization"];
+  const userId = jwtUtils.getUserId(headerAuth);
 
   if (userId < 0) {
   return res.status(400).json({ error: "wrong token" });
@@ -488,6 +489,149 @@ router.delete("/profile", (req, res) => {
               return res.status(201).json(request);
           } else {
               return res.status(500).json({ error: "cannot delete user" });
+          }
+      }
+  );
+});
+
+// Reset user Password
+router.post('/requestEmailPassword',(req,res)=>{
+  const email = req.body.email;
+
+  asyncLib.waterfall(
+    [
+    function (done) {
+      models.user
+      .findOne({
+          attributes: [
+          `id`,
+          `email`
+          ],
+          where: { email: email },
+      })
+      .then(function (userFound) {
+        if(userFound) {
+          done(null, userFound);
+        } else {
+          return res.status(500).json({ error: "user email not exist in DB" });
+        }
+      })
+      .catch(function (err) {
+          return res.status(500).json({ error: "unable to verify user" });
+      });
+    },
+    function(newResetPasswordRequest, done) {
+      const createResetPasswordRequest = models.resetPasswordRequest
+        .create({
+          hashedToken: jwtUtils.generateTokenForResetPasswordUser(newResetPasswordRequest),
+          requestedAt: new Date(),
+          idUser: newResetPasswordRequest.id
+        })
+        .then(function (sendResetPasswordEmail) {
+            done(null, sendResetPasswordEmail);
+        })
+        .catch(function (err) {
+          return res.status(500).json({ error: "cannot add user reset password request" });
+        });
+    },
+    function (sendResetPasswordEmail, done) {
+      emailSender.emailData(email, sendResetPasswordEmail.hashedToken)
+      .then(function (resetPasswordRequest) {
+        done(sendResetPasswordEmail);
+      })
+      .catch(function (err) {
+        return res.status(500).json({ error: "cannot send reset password email" });
+      });
+    }
+    ],
+    function (resetPasswordRequest) {
+      if(resetPasswordRequest) {    
+        return res.status(200).json({
+          success: true,
+          userId: resetPasswordRequest.idUser,
+          token: resetPasswordRequest.hashedToken
+        })
+      } else {
+          return res.json({ error: "unable to verify user email" });
+      }
+    }   
+  );
+});
+
+// Reset user Password
+router.put('/resetPassword/:token',(req,res)=>{
+  // Params
+  const token = req.params.token;
+  const userId = jwtUtils.getUserIdEmailVerify(token);
+  const password = req.body.password;
+  const confirmPassword = req.body.confirmPassword;
+
+  if (userId < 0) {
+    return res.status(400).json({ error: "wrong token" });
+  }
+
+  if (!PASSWORD_REGEX.test(password)) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "password invalid (must lenght 4 - 30 and include 1 number at least)",
+        });
+    }
+    if (confirmPassword !== password) {
+      return res.status(400).json({ error: "passwords must match" });
+    }
+
+  asyncLib.waterfall(
+      [
+      function (done) {
+          models.user
+          .findOne({
+              attributes: [
+              `id`,
+              ],
+              where: { id: userId },
+          })
+          .then(function (userFound) {
+              done(null, userFound);
+          })
+          .catch(function (err) {
+              return res.status(500).json({ error: "unable to verify user" });
+          });
+      },
+
+      function (userFound, done) {
+          if(userFound) {
+            bcrypt.hash(password, 5, function (err, bcryptedPassword) {
+              done(null, userFound, bcryptedPassword);
+            });
+          }
+      },
+      function (userFound, bcryptedPassword, done) {
+          if (userFound) {
+              userFound.update({
+              password: bcryptedPassword ? bcryptedPassword : userFound.password,
+              })
+              .then(function (userFound) {  
+                done(userFound);
+              })
+              .catch(function (err) {
+                res.status(500).json({ error: "cannot reset user password" });
+              });
+          }
+      },
+      ],
+      function (userFound) {
+          if (userFound) {
+            const request = {
+              success: true,
+              userId: userId,
+              updatedAt: userFound.updatedAt
+            }
+            return res.status(201).json(request);
+
+          } else {
+              return res.status(500).json({ error: "cannot reset user password" });
           }
       }
   );
