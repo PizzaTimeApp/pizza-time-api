@@ -15,12 +15,21 @@ router.get("/getPizzas", (req, res) => {
   const limit = parseInt(req.query.limit);
   const offset = parseInt(req.query.offset);
   const order = req.query.order;
+  const type = req.query.type;
 
   models.pizza
     .findAll({
       order: [order != null ? order.split(":") : ["title", "ASC"]],
       limit: !isNaN(limit) ? limit : null,
       offset: !isNaN(offset) ? offset : null,
+      where: { creator: type },
+      include: [
+        {
+          model: models.ingredient,
+          as: "ingredient",
+          attributes: ["id", "name"],
+        },
+      ],
     })
     .then(function (pizzas) {
       if (pizzas) {
@@ -92,73 +101,77 @@ router.post("/createPizza", (req, res) => {
             });
         }
       },
-      async function (newPizza, done) {
-        if (newPizza) {
-          ingredients = ingredients.split(",");
-          await ingredients.forEach((ingredient) => {
-            models.pizzaIngredient
-              .create({
-                idPizza: newPizza.id,
-                idIngredient: ingredient,
-              })
-              .then(function (ingredientPizza) {
-                console.log("AjoutIngredient");
-              })
-              .catch(function (err) {
-                console.log(err);
-                return res.json({ error: "unable to create pizzaIngredient" });
-              });
-          });
-          await done(newPizza);
-        } else {
-          return res.json({ error: "cannot create newPizza" });
-        }
-      },
     ],
-    function (newPizza) {
-      return res.status(201).json({
-        success: true,
-        newPizza: newPizza,
-        ingredients: ingredients,
-      });
+    async function (newPizza) {
+      if (newPizza) {
+        ingredients = ingredients.split(",");
+        await ingredients.forEach((ingredient) => {
+          models.pizzaIngredient
+            .create({
+              idPizza: newPizza.id,
+              idIngredient: ingredient,
+            })
+            .then(function (ingredientPizza) {
+              console.log("AjoutIngredient");
+            })
+            .catch(function (err) {
+              console.log(err);
+              return res.json({ error: "unable to create pizzaIngredient" });
+            });
+        });
+        return res.status(201).json({
+          success: true,
+          newPizza: newPizza,
+          ingredients: ingredients,
+        });
+      } else {
+        return res.json({ error: "cannot create newPizza" });
+      }
     }
   );
 });
 
-/*
-//get ingredient
-router.get("/getIngredient/:id", (req, res) => {
-  const idIngredient = req.params.id;
+//get pizza
+router.get("/getPizza/:id", (req, res) => {
+  const idPizza = req.params.id;
   const headerAuth = req.headers["authorization"];
   const userId = jwtUtils.getUserId(headerAuth);
 
-  if (idIngredient == undefined || idIngredient == null || idIngredient == "")
+  if (idPizza == undefined || idPizza == null || idPizza == "")
     return res.json({ error: " id not defined" });
 
   if (userId < 0) {
     return res.status(400).json({ error: "wrong token" });
   }
 
-  models.ingredient
+  models.pizza
     .findOne({
-      where: { id: idIngredient },
+      where: { id: idPizza },
+      include: [
+        {
+          model: models.ingredient,
+          as: "ingredient",
+          attributes: ["id", "name"],
+        },
+      ],
     })
-    .then(function (ingredientFound) {
-      if (ingredientFound) {
+    .then(function (pizzaFound) {
+      if (pizzaFound) {
         res.status(200).json({
           success: true,
-          ingredients: ingredientFound,
+          pizza: pizzaFound,
         });
       } else {
-        res.json({ error: "no ingredients found" });
+        res.json({ error: "no pizza found" });
       }
     })
     .catch(function (err) {
       console.log(err);
-      return res.json({ error: "unable to verify ingredient" });
+      return res.json({ error: "unable to verify pizza" });
     });
 });
 
+/*
 // Ingredient Delete
 router.delete("/deleteIngredient/:id", (req, res) => {
   // Getting auth header

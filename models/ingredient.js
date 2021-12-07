@@ -1,7 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class ingredient extends Model {
     /**
@@ -15,17 +13,20 @@ module.exports = (sequelize, DataTypes) => {
       //     allowNull: false
       //   }
       // })
-      models.user.hasMany(models.pizzaIngredient);
+      // models.user.hasMany(models.pizzaIngredient);
       // models.ingredient.hasOne(models.pizzaIngredient, {
       //     foreignKey: 'idIngredient'
       // });
     }
-  };
-  ingredient.init({
-    name: DataTypes.STRING
-  }, {
-    sequelize,
-    modelName: 'ingredient',
-  });
+  }
+  ingredient.init(
+    {
+      name: DataTypes.STRING,
+    },
+    {
+      sequelize,
+      modelName: "ingredient",
+    }
+  );
   return ingredient;
 };

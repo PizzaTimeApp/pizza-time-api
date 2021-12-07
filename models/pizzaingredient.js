@@ -8,16 +8,18 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // models.ingredient.belongsToMany(models.pizza, {
-      //   through: models.pizzaIngredient,
-      //   onDelete: "cascade",
-      //   foreignKey: "idPizza",
-      // });
-      // models.pizza.belongsToMany(models.ingredient, {
-      //   through: models.pizzaIngredient,
-      //   onDelete: "cascade",
-      //   foreignKey: "idIngredient",
-      // });
+      models.ingredient.belongsToMany(models.pizza, {
+        through: models.pizzaIngredient,
+        onDelete: "cascade",
+        as: "pizza",
+        foreignKey: "idIngredient",
+      });
+      models.pizza.belongsToMany(models.ingredient, {
+        through: models.pizzaIngredient,
+        onDelete: "cascade",
+        as: "ingredient",
+        foreignKey: "idPizza",
+      });
     }
   }
   pizzaIngredient.init(
