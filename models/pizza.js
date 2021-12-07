@@ -1,7 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class pizza extends Model {
     /**
@@ -15,17 +13,24 @@ module.exports = (sequelize, DataTypes) => {
       // });
       // models.pizza.hasMany(models.reservation);
       // models.pizza.belongsToMany(User, { through: 'reservation' });
-      models.pizza.hasMany(models.pizzaIngredient);
+      models.pizza.hasMany(models.pizzaIngredient, {
+        onDelete: "cascade",
+        foreignKey: "id",
+      });
     }
-  };
-  pizza.init({
-    name: DataTypes.STRING,
-    price: DataTypes.STRING,
-    content: DataTypes.TEXT,
-    image: DataTypes.STRING
-  }, {
-    sequelize,
-    modelName: 'pizza',
-  });
+  }
+  pizza.init(
+    {
+      name: DataTypes.STRING,
+      price: DataTypes.STRING,
+      creator: DataTypes.STRING,
+      content: DataTypes.TEXT,
+      image: DataTypes.STRING,
+    },
+    {
+      sequelize,
+      modelName: "pizza",
+    }
+  );
   return pizza;
 };
