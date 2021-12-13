@@ -1,5 +1,5 @@
 // Imports
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const jwtUtils = require("../utils/jwt.utils");
@@ -8,7 +8,8 @@ const models = require("../models");
 const asyncLib = require("async");
 
 //constants
-const EMAIL_REGEX = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+const EMAIL_REGEX =
+  /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 const PASSWORD_REGEX = /^(?=.*\d).{4,30}$/;
 const ZIP_REGEX = /^\d{5}$/;
 const GENDER_REGEX = /^(male|female)$/;
@@ -62,12 +63,10 @@ router.post("/register", (req, res) => {
     return res.status(400).json({ error: "email is not valid" });
   }
   if (!PASSWORD_REGEX.test(password)) {
-    return res
-      .status(400)
-      .json({
-        error:
-          "password invalid (must lenght 4 - 30 and include 1 number at least)",
-      });
+    return res.status(400).json({
+      error:
+        "password invalid (must lenght 4 - 30 and include 1 number at least)",
+    });
   }
   if (confirmPassword !== password) {
     return res.status(400).json({ error: "passwords must match" });
@@ -104,6 +103,7 @@ router.post("/register", (req, res) => {
             done(null, userFound);
           })
           .catch(function (err) {
+            console.log(err);
             return res.status(500).json({ error: "unable to verify user" });
           });
       },
@@ -222,7 +222,7 @@ router.get("/profile", (req, res) => {
       if (user) {
         res.status(201).json({
           success: true,
-          user: user
+          user: user,
         });
       } else {
         res.status(404).json({ error: "user not found" });
@@ -232,15 +232,14 @@ router.get("/profile", (req, res) => {
       res.status(500).json({ error: "cannot fetch user" });
     });
 }),
-  
-// User Update Profile
-router.put("/profile", (req, res) => {
+  // User Update Profile
+  router.put("/profile", (req, res) => {
     // Getting auth header
     const headerAuth = req.headers["authorization"];
     const userId = jwtUtils.getUserId(headerAuth);
 
     if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
+      return res.status(400).json({ error: "wrong token" });
     }
 
     // Params
@@ -256,44 +255,44 @@ router.put("/profile", (req, res) => {
     const zip = req.body.zip;
 
     if (username.length < 3 || username.length >= 17) {
-        return res
+      return res
         .status(400)
         .json({ error: "wrong username (must be length 3 - 17)" });
     }
     if (email) {
-        if (!EMAIL_REGEX.test(email)) {
+      if (!EMAIL_REGEX.test(email)) {
         return res.json({ error: "email is not valid" });
-        }
+      }
     }
     if (gender) {
-        if (!GENDER_REGEX.test(gender)) {
+      if (!GENDER_REGEX.test(gender)) {
         return res.json({ error: "gender is not valid" });
-        }
+      }
     }
     if (zip) {
-        if (!ZIP_REGEX.test(zip)) {
+      if (!ZIP_REGEX.test(zip)) {
         return res.json({ error: "zip is not valid, must be 5 numbers" });
-        }
+      }
     }
     if (dateOfBirth) {
-        if (!DATEOFBIRTH_REGEX.test(dateOfBirth)) {
+      if (!DATEOFBIRTH_REGEX.test(dateOfBirth)) {
         return res.json({
-            error: "date of birth is not valid, format YYYY-MM-DD",
+          error: "date of birth is not valid, format YYYY-MM-DD",
         });
-        }
+      }
     }
     if (phone) {
-        if (!PHONE_REGEX.test(phone)) {
+      if (!PHONE_REGEX.test(phone)) {
         return res.json({ error: "phone is not valid, only number accepted" });
-        }
+      }
     }
 
     asyncLib.waterfall(
-        [
+      [
         function (done) {
-            models.user
+          models.user
             .findOne({
-                attributes: [
+              attributes: [
                 `id`,
                 `email`,
                 `firstname`,
@@ -305,20 +304,20 @@ router.put("/profile", (req, res) => {
                 `address`,
                 `city`,
                 `zip`,
-                ],
-                where: { id: userId },
+              ],
+              where: { id: userId },
             })
             .then(function (userFound) {
-              done(null, userFound)
+              done(null, userFound);
             })
             .catch(function (err) {
-                return res.status(500).json({ error: "unable to verify user" });
+              return res.status(500).json({ error: "unable to verify user" });
             });
         },
         function (userFound, done) {
-            if (userFound) {
+          if (userFound) {
             userFound
-                .update({
+              .update({
                 email: email ? email : userFound.email,
                 username: username ? username : userFound.username,
                 firstname: firstname ? firstname : userFound.firstname,
@@ -329,110 +328,108 @@ router.put("/profile", (req, res) => {
                 address: address ? address : userFound.address,
                 city: city ? city : userFound.city,
                 zip: zip ? zip : userFound.zip,
-                })
-                .then(function (userFound) {
-                  done(userFound);
-                })
-                .catch(function (err) {
+              })
+              .then(function (userFound) {
+                done(userFound);
+              })
+              .catch(function (err) {
                 console.log(err);
                 res.status(500).json({ error: "cannot update user" });
-                });
-            }
+              });
+          }
         },
-        ],
-        function (userFound) {
-            if (userFound) {
-              const request = {
-                    success: true,
-                    userFound: userFound
-                  }
-                return res.status(201).json(request);
-            } else {
-                return res.status(500).json({ error: "cannot update user profile" });
-            }
+      ],
+      function (userFound) {
+        if (userFound) {
+          const request = {
+            success: true,
+            userFound: userFound,
+          };
+          return res.status(201).json(request);
+        } else {
+          return res.status(500).json({ error: "cannot update user profile" });
         }
+      }
     );
-});
+  });
 
 // User Update Password
 router.put("/updatePassword", (req, res) => {
-    // Getting auth header
-    const headerAuth = req.headers["authorization"];
-    const userId = jwtUtils.getUserId(headerAuth);
+  // Getting auth header
+  const headerAuth = req.headers["authorization"];
+  const userId = jwtUtils.getUserId(headerAuth);
 
-    if (userId < 0) {
+  if (userId < 0) {
     return res.status(400).json({ error: "wrong token" });
-    }
+  }
 
-    // Params
-    const password = req.body.password;
-    const confirmPassword = req.body.confirmPassword;
+  // Params
+  const password = req.body.password;
+  const confirmPassword = req.body.confirmPassword;
 
-    if (!PASSWORD_REGEX.test(password)) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "password invalid (must lenght 4 - 30 and include 1 number at least)",
+  if (!PASSWORD_REGEX.test(password)) {
+    return res.status(400).json({
+      error:
+        "password invalid (must lenght 4 - 30 and include 1 number at least)",
+    });
+  }
+  if (confirmPassword !== password) {
+    return res.status(400).json({ error: "passwords must match" });
+  }
+
+  asyncLib.waterfall(
+    [
+      function (done) {
+        models.user
+          .findOne({
+            attributes: [`id`],
+            where: { id: userId },
+          })
+          .then(function (userFound) {
+            done(null, userFound);
+          })
+          .catch(function (err) {
+            return res.status(500).json({ error: "unable to verify user" });
           });
-      }
-      if (confirmPassword !== password) {
-        return res.status(400).json({ error: "passwords must match" });
-      }
+      },
 
-    asyncLib.waterfall(
-        [
-        function (done) {
-            models.user
-            .findOne({
-                attributes: [
-                `id`,
-                ],
-                where: { id: userId },
+      function (userFound, done) {
+        if (userFound) {
+          bcrypt.hash(password, 5, function (err, bcryptedPassword) {
+            done(null, userFound, bcryptedPassword);
+          });
+        }
+      },
+      function (userFound, bcryptedPassword, done) {
+        if (userFound) {
+          userFound
+            .update({
+              password: bcryptedPassword
+                ? bcryptedPassword
+                : userFound.password,
             })
             .then(function (userFound) {
-                done(null, userFound);
+              done(userFound);
             })
             .catch(function (err) {
-                return res.status(500).json({ error: "unable to verify user" });
+              res.status(500).json({ error: "cannot update user passsword" });
             });
-        },
-
-        function (userFound, done) {
-            if(userFound) {
-              bcrypt.hash(password, 5, function (err, bcryptedPassword) {
-                done(null, userFound, bcryptedPassword);
-              });
-            }
-        },
-        function (userFound, bcryptedPassword, done) {
-            if (userFound) {
-                userFound.update({
-                password: bcryptedPassword ? bcryptedPassword : userFound.password,
-                })
-                .then(function (userFound) {
-                  
-                  done(userFound);
-                })
-                .catch(function (err) {
-                res.status(500).json({ error: "cannot update user passsword" });
-                });
-            }
-        },
-        ],
-        function (userFound) {
-            if (userFound) {
-              const request = {
-                success: true,
-                userId: userId,
-                updatedAt: userFound.updatedAt
-              }
-                return res.status(201).json(request);
-            } else {
-                return res.status(500).json({ error: "cannot update user password" });
-            }
         }
-    );
+      },
+    ],
+    function (userFound) {
+      if (userFound) {
+        const request = {
+          success: true,
+          userId: userId,
+          updatedAt: userFound.updatedAt,
+        };
+        return res.status(201).json(request);
+      } else {
+        return res.status(500).json({ error: "cannot update user password" });
+      }
+    }
+  );
 });
 
 // User Delete
@@ -442,124 +439,129 @@ router.delete("/profile", (req, res) => {
   const userId = jwtUtils.getUserId(headerAuth);
 
   if (userId < 0) {
-  return res.status(400).json({ error: "wrong token" });
+    return res.status(400).json({ error: "wrong token" });
   }
 
   asyncLib.waterfall(
-      [
+    [
       function (done) {
-          models.user
+        models.user
           .findOne({
-              attributes: [
-              `id`,
-              ],
-              where: { id: userId },
+            attributes: [`id`],
+            where: { id: userId },
           })
           .then(function (userFound) {
-              done(null, userFound);
+            done(null, userFound);
           })
           .catch(function (err) {
-              return res.status(500).json({ error: "unable to verify user" });
+            return res.status(500).json({ error: "unable to verify user" });
           });
       },
       function (userFound, done) {
-          if (userFound) {
-              userFound.destroy({
-                where:{
-                  id: userId
-                }
-              })
-              .then(function (userFound) {
-                done(userFound);
-              })
-              .catch(function (err) {
+        if (userFound) {
+          userFound
+            .destroy({
+              where: {
+                id: userId,
+              },
+            })
+            .then(function (userFound) {
+              done(userFound);
+            })
+            .catch(function (err) {
               res.status(500).json({ error: "cannot delete user" });
-              });
-          }else {
-            return res.status(200).json({ error: "user not exist" });
+            });
+        } else {
+          return res.status(200).json({ error: "user not exist" });
         }
       },
-      ],
-      function (userFound) {
-          if (userFound) {
-            const request = {
-              success: true,
-              userId: userId,
-            }
-              return res.status(201).json(request);
-          } else {
-              return res.status(500).json({ error: "cannot delete user" });
-          }
+    ],
+    function (userFound) {
+      if (userFound) {
+        const request = {
+          success: true,
+          userId: userId,
+        };
+        return res.status(201).json(request);
+      } else {
+        return res.status(500).json({ error: "cannot delete user" });
       }
+    }
   );
 });
 
 // Reset user Password
-router.post('/requestEmailPassword',(req,res)=>{
+router.post("/requestEmailPassword", (req, res) => {
   const email = req.body.email;
 
   asyncLib.waterfall(
     [
-    function (done) {
-      models.user
-      .findOne({
-          attributes: [
-          `id`,
-          `email`
-          ],
-          where: { email: email },
-      })
-      .then(function (userFound) {
-        if(userFound) {
-          done(null, userFound);
-        } else {
-          return res.status(500).json({ error: "user email not exist in DB" });
-        }
-      })
-      .catch(function (err) {
-          return res.status(500).json({ error: "unable to verify user" });
-      });
-    },
-    function(newResetPasswordRequest, done) {
-      const createResetPasswordRequest = models.resetPasswordRequest
-        .create({
-          hashedToken: jwtUtils.generateTokenForResetPasswordUser(newResetPasswordRequest),
-          requestedAt: new Date(),
-          idUser: newResetPasswordRequest.id
-        })
-        .then(function (sendResetPasswordEmail) {
+      function (done) {
+        models.user
+          .findOne({
+            attributes: [`id`, `email`],
+            where: { email: email },
+          })
+          .then(function (userFound) {
+            if (userFound) {
+              done(null, userFound);
+            } else {
+              return res
+                .status(500)
+                .json({ error: "user email not exist in DB" });
+            }
+          })
+          .catch(function (err) {
+            return res.status(500).json({ error: "unable to verify user" });
+          });
+      },
+      function (newResetPasswordRequest, done) {
+        const createResetPasswordRequest = models.resetPasswordRequest
+          .create({
+            hashedToken: jwtUtils.generateTokenForResetPasswordUser(
+              newResetPasswordRequest
+            ),
+            requestedAt: new Date(),
+            idUser: newResetPasswordRequest.id,
+          })
+          .then(function (sendResetPasswordEmail) {
             done(null, sendResetPasswordEmail);
-        })
-        .catch(function (err) {
-          return res.status(500).json({ error: "cannot add user reset password request" });
-        });
-    },
-    function (sendResetPasswordEmail, done) {
-      emailSender.emailData(email, sendResetPasswordEmail.hashedToken)
-      .then(function (resetPasswordRequest) {
-        done(sendResetPasswordEmail);
-      })
-      .catch(function (err) {
-        return res.status(500).json({ error: "cannot send reset password email" });
-      });
-    }
+          })
+          .catch(function (err) {
+            return res
+              .status(500)
+              .json({ error: "cannot add user reset password request" });
+          });
+      },
+      function (sendResetPasswordEmail, done) {
+        emailSender
+          .emailData(email, sendResetPasswordEmail.hashedToken)
+          .then(function (resetPasswordRequest) {
+            done(sendResetPasswordEmail);
+          })
+          .catch(function (err) {
+            return res
+              .status(500)
+              .json({ error: "cannot send reset password email" });
+          });
+      },
     ],
     function (resetPasswordRequest) {
-      if(resetPasswordRequest) {    
+      if (resetPasswordRequest) {
         return res.status(200).json({
           success: true,
           userId: resetPasswordRequest.idUser,
-          token: resetPasswordRequest.hashedToken
-        })
+          token: resetPasswordRequest.hashedToken,
+        });
       } else {
-          return res.json({ error: "unable to verify user email" });
+        return res.json({ error: "unable to verify user email" });
       }
-    }   
+    }
   );
 });
 
 // Reset user Password
-router.put('/resetPassword/:token',(req,res)=>{
+router.put("/resetPassword/:token", (req, res) => {
   // Params
   const token = req.params.token;
   const userId = jwtUtils.getUserIdEmailVerify(token);
@@ -571,69 +573,67 @@ router.put('/resetPassword/:token',(req,res)=>{
   }
 
   if (!PASSWORD_REGEX.test(password)) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "password invalid (must lenght 4 - 30 and include 1 number at least)",
-        });
-    }
-    if (confirmPassword !== password) {
-      return res.status(400).json({ error: "passwords must match" });
-    }
+    return res.status(400).json({
+      error:
+        "password invalid (must lenght 4 - 30 and include 1 number at least)",
+    });
+  }
+  if (confirmPassword !== password) {
+    return res.status(400).json({ error: "passwords must match" });
+  }
 
   asyncLib.waterfall(
-      [
+    [
       function (done) {
-          models.user
+        models.user
           .findOne({
-              attributes: [
-              `id`,
-              ],
-              where: { id: userId },
+            attributes: [`id`],
+            where: { id: userId },
           })
           .then(function (userFound) {
-              done(null, userFound);
+            done(null, userFound);
           })
           .catch(function (err) {
-              return res.status(500).json({ error: "unable to verify user" });
+            return res.status(500).json({ error: "unable to verify user" });
           });
       },
 
       function (userFound, done) {
-          if(userFound) {
-            bcrypt.hash(password, 5, function (err, bcryptedPassword) {
-              done(null, userFound, bcryptedPassword);
-            });
-          }
+        if (userFound) {
+          bcrypt.hash(password, 5, function (err, bcryptedPassword) {
+            done(null, userFound, bcryptedPassword);
+          });
+        }
       },
       function (userFound, bcryptedPassword, done) {
-          if (userFound) {
-              userFound.update({
-              password: bcryptedPassword ? bcryptedPassword : userFound.password,
-              })
-              .then(function (userFound) {  
-                done(userFound);
-              })
-              .catch(function (err) {
-                res.status(500).json({ error: "cannot reset user password" });
-              });
-          }
+        if (userFound) {
+          userFound
+            .update({
+              password: bcryptedPassword
+                ? bcryptedPassword
+                : userFound.password,
+            })
+            .then(function (userFound) {
+              done(userFound);
+            })
+            .catch(function (err) {
+              res.status(500).json({ error: "cannot reset user password" });
+            });
+        }
       },
-      ],
-      function (userFound) {
-          if (userFound) {
-            const request = {
-              success: true,
-              userId: userId,
-              updatedAt: userFound.updatedAt
-            }
-            return res.status(201).json(request);
-
-          } else {
-              return res.status(500).json({ error: "cannot reset user password" });
-          }
+    ],
+    function (userFound) {
+      if (userFound) {
+        const request = {
+          success: true,
+          userId: userId,
+          updatedAt: userFound.updatedAt,
+        };
+        return res.status(201).json(request);
+      } else {
+        return res.status(500).json({ error: "cannot reset user password" });
       }
+    }
   );
 });
 
