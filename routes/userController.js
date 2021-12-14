@@ -231,127 +231,135 @@ router.get("/profile", (req, res) => {
     .catch(function (err) {
       res.status(500).json({ error: "cannot fetch user" });
     });
-}),
-  // User Update Profile
-  router.put("/profile", (req, res) => {
-    // Getting auth header
-    const headerAuth = req.headers["authorization"];
-    const userId = jwtUtils.getUserId(headerAuth);
+});
 
-    if (userId < 0) {
-      return res.status(400).json({ error: "wrong token" });
-    }
+// User Update Profile
+router.put("/profile", (req, res) => {
+  // Getting auth header
+  const headerAuth = req.headers["authorization"];
+  const userId = jwtUtils.getUserId(headerAuth);
 
-    // Params
-    const email = req.body.email;
-    const username = req.body.username;
-    const firstname = req.body.firstname;
-    const lastname = req.body.lastname;
-    const dateOfBirth = req.body.dateOfBirth;
-    const gender = req.body.gender;
-    const phone = req.body.phone;
-    const address = req.body.address;
-    const city = req.body.city;
-    const zip = req.body.zip;
+  if (userId < 0) {
+    return res.status(400).json({ error: "wrong token" });
+  }
 
+  // Params
+  const email = req.body.email;
+  const username = req.body.username;
+  const firstname = req.body.firstname;
+  const lastname = req.body.lastname;
+  const dateOfBirth = req.body.dateOfBirth;
+  const gender = req.body.gender;
+  const phone = req.body.phone;
+  const address = req.body.address;
+  const city = req.body.city;
+  const zip = req.body.zip;
+
+  if (username) {
     if (username.length < 3 || username.length >= 17) {
       return res
         .status(400)
         .json({ error: "wrong username (must be length 3 - 17)" });
     }
-    if (email) {
-      if (!EMAIL_REGEX.test(email)) {
-        return res.json({ error: "email is not valid" });
-      }
-    }
-    if (gender) {
-      if (!GENDER_REGEX.test(gender)) {
-        return res.json({ error: "gender is not valid" });
-      }
-    }
-    if (zip) {
-      if (!ZIP_REGEX.test(zip)) {
-        return res.json({ error: "zip is not valid, must be 5 numbers" });
-      }
-    }
-    if (dateOfBirth) {
-      if (!DATEOFBIRTH_REGEX.test(dateOfBirth)) {
-        return res.json({
-          error: "date of birth is not valid, format YYYY-MM-DD",
-        });
-      }
-    }
-    if (phone) {
-      if (!PHONE_REGEX.test(phone)) {
-        return res.json({ error: "phone is not valid, only number accepted" });
-      }
-    }
+  }
 
-    asyncLib.waterfall(
-      [
-        function (done) {
-          models.user
-            .findOne({
-              attributes: [
-                `id`,
-                `email`,
-                `firstname`,
-                `lastname`,
-                `dateOfBirth`,
-                `gender`,
-                `username`,
-                `phone`,
-                `address`,
-                `city`,
-                `zip`,
-              ],
-              where: { id: userId },
+  if (email) {
+    if (!EMAIL_REGEX.test(email)) {
+      return res.json({ error: "email is not valid" });
+    }
+  }
+
+  if (gender) {
+    if (!GENDER_REGEX.test(gender)) {
+      return res.json({ error: "gender is not valid" });
+    }
+  }
+
+  if (zip) {
+    if (!ZIP_REGEX.test(zip)) {
+      return res.json({ error: "zip is not valid, must be 5 numbers" });
+    }
+  }
+
+  if (dateOfBirth) {
+    if (!DATEOFBIRTH_REGEX.test(dateOfBirth)) {
+      return res.json({
+        error: "date of birth is not valid, format YYYY-MM-DD",
+      });
+    }
+  }
+
+  if (phone) {
+    if (!PHONE_REGEX.test(phone)) {
+      return res.json({ error: "phone is not valid, only number accepted" });
+    }
+  }
+
+  asyncLib.waterfall(
+    [
+      function (done) {
+        models.user
+          .findOne({
+            attributes: [
+              `id`,
+              `email`,
+              `firstname`,
+              `lastname`,
+              `dateOfBirth`,
+              `gender`,
+              `username`,
+              `phone`,
+              `address`,
+              `city`,
+              `zip`,
+            ],
+            where: { id: userId },
+          })
+          .then(function (userFound) {
+            done(null, userFound);
+          })
+          .catch(function (err) {
+            return res.status(500).json({ error: "unable to verify user" });
+          });
+      },
+      function (userFound, done) {
+        if (userFound) {
+          userFound
+            .update({
+              email: email ? email : userFound.email,
+              username: username ? username : userFound.username,
+              firstname: firstname ? firstname : userFound.firstname,
+              lastname: lastname ? lastname : userFound.lastname,
+              dateOfBirth: dateOfBirth ? dateOfBirth : userFound.dateOfBirth,
+              gender: gender ? gender : userFound.gender,
+              phone: phone ? phone : userFound.phone,
+              address: address ? address : userFound.address,
+              city: city ? city : userFound.city,
+              zip: zip ? zip : userFound.zip,
             })
             .then(function (userFound) {
-              done(null, userFound);
+              done(userFound);
             })
             .catch(function (err) {
-              return res.status(500).json({ error: "unable to verify user" });
+              console.log(err);
+              res.status(500).json({ error: "cannot update user" });
             });
-        },
-        function (userFound, done) {
-          if (userFound) {
-            userFound
-              .update({
-                email: email ? email : userFound.email,
-                username: username ? username : userFound.username,
-                firstname: firstname ? firstname : userFound.firstname,
-                lastname: lastname ? lastname : userFound.lastname,
-                dateOfBirth: dateOfBirth ? dateOfBirth : userFound.dateOfBirth,
-                gender: gender ? gender : userFound.gender,
-                phone: phone ? phone : userFound.phone,
-                address: address ? address : userFound.address,
-                city: city ? city : userFound.city,
-                zip: zip ? zip : userFound.zip,
-              })
-              .then(function (userFound) {
-                done(userFound);
-              })
-              .catch(function (err) {
-                console.log(err);
-                res.status(500).json({ error: "cannot update user" });
-              });
-          }
-        },
-      ],
-      function (userFound) {
-        if (userFound) {
-          const request = {
-            success: true,
-            userFound: userFound,
-          };
-          return res.status(201).json(request);
-        } else {
-          return res.status(500).json({ error: "cannot update user profile" });
         }
+      },
+    ],
+    function (userFound) {
+      if (userFound) {
+        const request = {
+          success: true,
+          userFound: userFound,
+        };
+        return res.status(201).json(request);
+      } else {
+        return res.status(500).json({ error: "cannot update user profile" });
       }
-    );
-  });
+    }
+  );
+});
 
 // User Update Password
 router.put("/updatePassword", (req, res) => {
@@ -447,7 +455,6 @@ router.delete("/profile", (req, res) => {
       function (done) {
         models.user
           .findOne({
-            attributes: [`id`],
             where: { id: userId },
           })
           .then(function (userFound) {
@@ -528,6 +535,7 @@ router.post("/requestEmailPassword", (req, res) => {
             done(null, sendResetPasswordEmail);
           })
           .catch(function (err) {
+            console.log(err);
             return res
               .status(500)
               .json({ error: "cannot add user reset password request" });
@@ -551,7 +559,6 @@ router.post("/requestEmailPassword", (req, res) => {
         return res.status(200).json({
           success: true,
           userId: resetPasswordRequest.idUser,
-          token: resetPasswordRequest.hashedToken,
         });
       } else {
         return res.json({ error: "unable to verify user email" });
@@ -635,6 +642,163 @@ router.put("/resetPassword/:token", (req, res) => {
       }
     }
   );
+});
+
+// User Delete Admin
+router.delete("/deleteUser/:id", (req, res) => {
+  // Getting auth header
+  const headerAuth = req.headers["authorization"];
+  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
+
+  if (isAdmin != "admin") {
+    return res.status(400).json({ error: "no Admin" });
+  }
+
+  const idDeletedUser = req.params.id;
+  if (idDeletedUser <= 0) {
+    return res.status(400).json({ error: "no valid id" });
+  }
+  asyncLib.waterfall(
+    [
+      function (done) {
+        models.user
+          .findOne({
+            attributes: [`id`],
+            where: { id: idDeletedUser },
+          })
+          .then(function (userFound) {
+            done(null, userFound);
+          })
+          .catch(function (err) {
+            return res.status(500).json({ error: "unable to verify user" });
+          });
+      },
+      function (userFound, done) {
+        if (userFound) {
+          userFound
+            .destroy({
+              where: {
+                id: idDeletedUser,
+              },
+            })
+            .then(function (userFound) {
+              done(userFound);
+            })
+            .catch(function (err) {
+              console.log(err);
+              res.status(500).json({ error: "cannot delete user" });
+            });
+        } else {
+          return res.status(200).json({ error: "user not exist" });
+        }
+      },
+    ],
+    function (userFound) {
+      if (userFound) {
+        const request = {
+          success: true,
+          userId: idDeletedUser,
+        };
+        return res.status(201).json(request);
+      } else {
+        return res.status(500).json({ error: "cannot delete user" });
+      }
+    }
+  );
+});
+
+//Get Users
+router.get("/getUsers", (req, res) => {
+  const headerAuth = req.headers["authorization"];
+  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
+
+  if (isAdmin != "admin") {
+    return res.status(400).json({ error: "no Admin" });
+  }
+
+  const limit = parseInt(req.query.limit);
+  const offset = parseInt(req.query.offset);
+  const order = req.query.order;
+
+  models.user
+    .findAll({
+      attributes: [
+        `id`,
+        `email`,
+        `firstname`,
+        `lastname`,
+        `username`,
+        `gender`,
+        `dateOfBirth`,
+        `phone`,
+        `address`,
+        `city`,
+        `zip`,
+      ],
+      order: [order != null ? order.split(":") : ["id", "ASC"]],
+      limit: !isNaN(limit) ? limit : null,
+      offset: !isNaN(offset) ? offset : null,
+    })
+    .then(function (users) {
+      if (users) {
+        res.status(200).json({
+          success: true,
+          users: users,
+        });
+      } else {
+        res.json({ error: "no users found" });
+      }
+    })
+    .catch(function (err) {
+      console.log(err);
+      res.json({ error: "invalid fields" });
+    });
+});
+
+//get User by id
+router.get("/getUser/:id", (req, res) => {
+  const idUser = req.params.id;
+  const headerAuth = req.headers["authorization"];
+  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
+
+  if (isAdmin != "admin") {
+    return res.status(400).json({ error: "no Admin" });
+  }
+
+  if (idUser == undefined || idUser == null || idUser == "")
+    return res.json({ error: " id not defined" });
+
+  models.user
+    .findOne({
+      attributes: [
+        `id`,
+        `email`,
+        `firstname`,
+        `lastname`,
+        `username`,
+        `gender`,
+        `dateOfBirth`,
+        `phone`,
+        `address`,
+        `city`,
+        `zip`,
+      ],
+      where: { id: idUser },
+    })
+    .then(function (userFound) {
+      if (userFound) {
+        res.status(200).json({
+          success: true,
+          user: userFound,
+        });
+      } else {
+        res.json({ error: "no user found" });
+      }
+    })
+    .catch(function (err) {
+      console.log(err);
+      return res.json({ error: "unable to verify user" });
+    });
 });
 
 module.exports = router;
