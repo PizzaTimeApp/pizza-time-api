@@ -19,7 +19,7 @@ router.get("/getPizzas", (req, res) => {
 
   models.pizza
     .findAll({
-      order: [order != null ? order.split(":") : ["title", "ASC"]],
+      order: [order != null ? order.split(":") : ["name", "ASC"]],
       limit: !isNaN(limit) ? limit : null,
       offset: !isNaN(offset) ? offset : null,
       where: { creator: type },
