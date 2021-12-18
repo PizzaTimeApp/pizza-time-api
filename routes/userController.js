@@ -344,6 +344,8 @@ router.put("/profile", (req, res) => {
               console.log(err);
               res.status(500).json({ error: "cannot update user" });
             });
+        } else {
+          res.status(200).json({ error: "User not found" });
         }
       },
     ],
@@ -406,6 +408,8 @@ router.put("/updatePassword", (req, res) => {
           bcrypt.hash(password, 5, function (err, bcryptedPassword) {
             done(null, userFound, bcryptedPassword);
           });
+        } else {
+          res.status(200).json({ error: "User not found" });
         }
       },
       function (userFound, bcryptedPassword, done) {
@@ -422,6 +426,8 @@ router.put("/updatePassword", (req, res) => {
             .catch(function (err) {
               res.status(500).json({ error: "cannot update user passsword" });
             });
+        } else {
+          res.status(200).json({ error: "User not found" });
         }
       },
     ],
@@ -610,6 +616,8 @@ router.put("/resetPassword/:token", (req, res) => {
           bcrypt.hash(password, 5, function (err, bcryptedPassword) {
             done(null, userFound, bcryptedPassword);
           });
+        } else {
+          res.status(200).json({ error: "User not found" });
         }
       },
       function (userFound, bcryptedPassword, done) {
