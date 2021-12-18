@@ -225,7 +225,7 @@ router.put("/updateIngredient/:id", (req, res) => {
               done(ingredientFound);
             })
             .catch(function (err) {
-              res.status(500).json({ error: "cannot update ingredient" });
+              return res.status(500).json({ error: "cannot update ingredient" });
             });
         }
       },

@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // models.user.hasMany(models.resetPasswordRequest);
       // models.user.hasMany(models.reservation);
       // models.user.hasMany(models.resetPasswordRequest);
-      models.user.hasMany(models.reservation, {
+      models.user.hasMany(models.order, {
         onDelete: 'cascade',
         foreignKey: 'id'
       });

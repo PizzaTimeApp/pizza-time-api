@@ -5,7 +5,7 @@ const bodyParse = require("body-parser");
 const userController = require("./routes/userController");
 const pizzaController = require("./routes/pizzaController");
 const ingredientController = require("./routes/ingredientController");
-const reservationController = require("./routes/reservationController");
+const orderController = require("./routes/orderController");
 
 // Initialize Server
 const server = express();
@@ -35,7 +35,7 @@ server.get("/", function (req, res) {
 server.use("/api/user", userController);
 server.use("/api/pizza", pizzaController);
 server.use("/api/ingredient", ingredientController);
-server.use("/api/reservation", reservationController);
+server.use("/api/order", orderController);
 
 server.listen("8101", function () {
   console.log("Server running");

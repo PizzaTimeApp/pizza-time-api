@@ -1,29 +1,12 @@
 'use strict';
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('reservations', {
+    await queryInterface.createTable('orders', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
+        autoIncrement: true,
         type: Sequelize.INTEGER
-      },
-      quantity: {
-        allowNull: false,
-        type: Sequelize.INTEGER
-      },
-      orderNumber: {
-        allowNull: false,
-        type: Sequelize.STRING
-      },
-      idPizza: {
-        allowNull: false,
-        type: Sequelize.INTEGER,
-        onDelete: 'CASCADE',
-        references: {
-          model: 'pizzas',
-          key: 'id'
-        }
       },
       idUser: {
         allowNull: false,
@@ -33,6 +16,10 @@ module.exports = {
           model: 'users',
           key: 'id'
         }
+      },
+      status: {
+        type: Sequelize.ENUM,
+        values: ['new', 'pending payment', 'precessing', 'complete', 'closed', 'canceled']
       },
       createdAt: {
         allowNull: false,
@@ -45,6 +32,6 @@ module.exports = {
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('reservations');
+    await queryInterface.dropTable('orders');
   }
 };
