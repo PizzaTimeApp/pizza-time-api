@@ -64,27 +64,22 @@ router.post("/createPizza", (req, res) => {
   const content = req.body.content;
   var ingredients = req.body.ingredients;
 
-  asyncLib.waterfall(
-    [
-      function (done) {
-        models.pizza
-          .findOne({
-            where: { name: name },
-          })
-          .then(function (pizzaFound) {
-            done(null, pizzaFound);
-          })
-          .catch(function (err) {
-            console.log(err);
-            return res.json({ error: "unable to verify pizza" });
-          });
-      },
-      function (pizzaFound, done) {
-        if (pizzaFound) {
-          return res.json({ error: "Pizza already exist" });
+  //without waterfall
+  models.pizza
+    .findOne({
+      where: { name: name },
+    })
+    .then(async function (pizzaFound) {
+      if (pizzaFound) {
+        return res.json({ error: "Pizza already exist" });
+      } else {
+        ingredients = ingredients.split(",");
+
+        if (await ingredientNotExist(ingredients)) {
+          console.log("Ingredient not exist");
+          return res.json({ error: "Ingredient not exist" });
         } else {
-          //TODO : Faire un nouveau waterfall pour regarder si tous les ingredients existent
-          models.pizza
+          await models.pizza
             .create({
               name: name,
               price: price,
@@ -93,45 +88,46 @@ router.post("/createPizza", (req, res) => {
               creator: isAdmin,
             })
             .then(function (newPizza) {
-              done(newPizza);
+              if (newPizza) {
+                ingredients.forEach((ingredient) => {
+                  models.pizzaIngredient
+                    .create({
+                      idPizza: newPizza.id,
+                      idIngredient: ingredient,
+                    })
+                    .then(function (ingredientPizza) {
+                      console.log("AjoutIngredient");
+                    })
+                    .catch(function (err) {
+                      console.log(err);
+                      return res.json({
+                        error: "unable to create pizzaIngredient",
+                      });
+                    });
+                });
+                return res.status(201).json({
+                  success: true,
+                  newPizza: newPizza,
+                  ingredients: ingredients,
+                });
+              } else {
+                return res.json({ error: "cannot create newPizza" });
+              }
             })
             .catch(function (err) {
               console.log(err);
               return res.json({ error: "unable to create pizza" });
             });
         }
-      },
-    ],
-    async function (newPizza) {
-      if (newPizza) {
-        ingredients = ingredients.split(",");
-        await ingredients.forEach((ingredient) => {
-          models.pizzaIngredient
-            .create({
-              idPizza: newPizza.id,
-              idIngredient: ingredient,
-            })
-            .then(function (ingredientPizza) {
-              console.log("AjoutIngredient");
-            })
-            .catch(function (err) {
-              console.log(err);
-              return res.json({ error: "unable to create pizzaIngredient" });
-            });
-        });
-        return res.status(201).json({
-          success: true,
-          newPizza: newPizza,
-          ingredients: ingredients,
-        });
-      } else {
-        return res.json({ error: "cannot create newPizza" });
       }
-    }
-  );
+    })
+    .catch(function (err) {
+      console.log(err);
+      return res.json({ error: "unable to verify pizza" });
+    });
 });
 
-//get pizza
+//Get Pizza
 router.get("/getPizza/:id", (req, res) => {
   const idPizza = req.params.id;
   const headerAuth = req.headers["authorization"];
@@ -171,9 +167,8 @@ router.get("/getPizza/:id", (req, res) => {
     });
 });
 
-/*
-// Ingredient Delete
-router.delete("/deleteIngredient/:id", (req, res) => {
+// Delete Pizza
+router.delete("/deletePizza/:id", (req, res) => {
   // Getting auth header
   const headerAuth = req.headers["authorization"];
   const isAdmin = jwtUtils.getIsAdmin(headerAuth);
@@ -182,60 +177,58 @@ router.delete("/deleteIngredient/:id", (req, res) => {
     return res.status(400).json({ error: "no Admin" });
   }
 
-  const idIngredient = req.params.id;
+  const idPizza = req.params.id;
 
   asyncLib.waterfall(
     [
       function (done) {
-        models.ingredient
+        models.pizza
           .findOne({
-            where: { id: idIngredient },
+            where: { id: idPizza },
           })
-          .then(function (ingredientFound) {
-            done(null, ingredientFound);
+          .then(function (pizzaFound) {
+            done(null, pizzaFound);
           })
           .catch(function (err) {
             console.log(err);
-            return res
-              .status(500)
-              .json({ error: "unable to verify ingredient" });
+            return res.status(500).json({ error: "unable to verify pizza" });
           });
       },
-      function (ingredientFound, done) {
-        if (ingredientFound) {
-          ingredientFound
+      function (pizzaFound, done) {
+        if (pizzaFound) {
+          pizzaFound
             .destroy({
               where: {
-                id: idIngredient,
+                id: idPizza,
               },
             })
-            .then(function (ingredientFound) {
-              done(ingredientFound);
+            .then(function (pizzaFound) {
+              done(pizzaFound);
             })
             .catch(function (err) {
-              res.status(500).json({ error: "cannot delete ingredient" });
+              res.status(500).json({ error: "cannot delete pizza" });
             });
         } else {
-          return res.status(200).json({ error: "ingredient not exist" });
+          return res.status(200).json({ error: "pizza not exist" });
         }
       },
     ],
-    function (ingredientFound) {
-      if (ingredientFound) {
+    function (pizzaFound) {
+      if (pizzaFound) {
         const request = {
           success: true,
-          idIngredient: idIngredient,
+          idPizza: idPizza,
         };
         return res.status(201).json(request);
       } else {
-        return res.status(500).json({ error: "cannot delete ingredient" });
+        return res.status(500).json({ error: "cannot delete pizza" });
       }
     }
   );
 });
 
-// Update INgredient
-router.put("/updateIngredient/:id", (req, res) => {
+// Update Pizza
+router.put("/updatePizza/:id", (req, res) => {
   // Getting auth header
   const headerAuth = req.headers["authorization"];
   const isAdmin = jwtUtils.getIsAdmin(headerAuth);
@@ -244,53 +237,92 @@ router.put("/updateIngredient/:id", (req, res) => {
     return res.status(400).json({ error: "no Admin" });
   }
 
-  const idIngredient = req.params.id;
+  const idPizza = req.params.id;
+  if (idPizza == "" || idPizza == undefined || idPizza == null) {
+    return res.status(400).json({ error: "no id" });
+  }
   const name = req.body.name;
+  const price = req.body.price;
+  const content = req.body.content;
+  const image = req.body.image;
 
   asyncLib.waterfall(
     [
       function (done) {
-        models.ingredient
+        models.pizza
           .findOne({
-            attributes: [`id`, `name`],
-            where: { id: idIngredient },
+            attributes: [`id`, `name`, `price`, `content`, `image`],
+            where: { id: idPizza },
           })
-          .then(function (ingredientFound) {
-            done(null, ingredientFound);
+          .then(function (pizzaFound) {
+            done(null, pizzaFound);
           })
           .catch(function (err) {
-            return res
-              .status(500)
-              .json({ error: "unable to verify ingredient" });
+            return res.status(500).json({ error: "unable to verify pizza" });
           });
       },
-      function (ingredientFound, done) {
-        if (ingredientFound) {
-          ingredientFound
+      function (pizzaFound, done) {
+        console.log(pizzaFound);
+        if (pizzaFound) {
+          pizzaFound
             .update({
-              name: name ? name : ingredientFound.name,
+              name: name ? name : pizzaFound.name,
+              price: price ? price : pizzaFound.price,
+              content: content ? content : pizzaFound.content,
+              image: image ? image : pizzaFound.image,
             })
-            .then(function (ingredientFound) {
-              done(ingredientFound);
+            .then(function (pizzaFound) {
+              done(pizzaFound);
             })
             .catch(function (err) {
-              res.status(500).json({ error: "cannot update ingredient" });
+              res.status(500).json({ error: "cannot update pizza" });
             });
+        } else {
+          res.json({ error: "cannot found pizza" });
         }
       },
     ],
-    function (ingredientFound) {
-      if (ingredientFound) {
+    function (pizzaFound) {
+      if (pizzaFound) {
         const request = {
           success: true,
-          ingredient: ingredientFound,
+          pizzaFound: pizzaFound,
         };
         return res.status(201).json(request);
       } else {
-        return res.status(500).json({ error: "cannot update Ingredient" });
+        return res.status(500).json({ error: "cannot update Pizza" });
       }
     }
   );
 });
-*/
+
+const ingredientNotExist = function (idIngredients) {
+  return new Promise(function (resolve, reject) {
+    let ingredientNotFound = false;
+    idIngredients.forEach(async (idIngredient, index, array) => {
+      await models.ingredient
+        .findOne({
+          where: { id: idIngredient },
+        })
+        .then(function (IngredientFound) {
+          if (IngredientFound) {
+            console.log("ingredient found : " + idIngredient);
+          } else {
+            console.log("ingredient not found : " + idIngredient);
+            ingredientNotFound = true;
+          }
+        })
+        .catch(function (err) {
+          console.log(err);
+          console.log("unable to verify ingredient");
+          ingredientNotFound = true;
+        });
+
+      if (index === array.length - 1) {
+        resolve(ingredientNotFound);
+      }
+    });
+  });
+};
+
 module.exports = router;
