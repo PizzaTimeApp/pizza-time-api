@@ -127,7 +127,7 @@ router.post("/createPizza", (req, res) => {
     });
 });
 
-//get pizza
+//Get Pizza
 router.get("/getPizza/:id", (req, res) => {
   const idPizza = req.params.id;
   const headerAuth = req.headers["authorization"];
@@ -165,6 +165,135 @@ router.get("/getPizza/:id", (req, res) => {
       console.log(err);
       return res.json({ error: "unable to verify pizza" });
     });
+});
+
+// Delete Pizza
+router.delete("/deletePizza/:id", (req, res) => {
+  // Getting auth header
+  const headerAuth = req.headers["authorization"];
+  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
+
+  if (isAdmin != "admin") {
+    return res.status(400).json({ error: "no Admin" });
+  }
+
+  const idPizza = req.params.id;
+
+  asyncLib.waterfall(
+    [
+      function (done) {
+        models.pizza
+          .findOne({
+            where: { id: idPizza },
+          })
+          .then(function (pizzaFound) {
+            done(null, pizzaFound);
+          })
+          .catch(function (err) {
+            console.log(err);
+            return res.status(500).json({ error: "unable to verify pizza" });
+          });
+      },
+      function (pizzaFound, done) {
+        if (pizzaFound) {
+          pizzaFound
+            .destroy({
+              where: {
+                id: idPizza,
+              },
+            })
+            .then(function (pizzaFound) {
+              done(pizzaFound);
+            })
+            .catch(function (err) {
+              res.status(500).json({ error: "cannot delete pizza" });
+            });
+        } else {
+          return res.status(200).json({ error: "pizza not exist" });
+        }
+      },
+    ],
+    function (pizzaFound) {
+      if (pizzaFound) {
+        const request = {
+          success: true,
+          idPizza: idPizza,
+        };
+        return res.status(201).json(request);
+      } else {
+        return res.status(500).json({ error: "cannot delete pizza" });
+      }
+    }
+  );
+});
+
+// Update Pizza
+router.put("/updatePizza/:id", (req, res) => {
+  // Getting auth header
+  const headerAuth = req.headers["authorization"];
+  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
+
+  if (isAdmin != "admin") {
+    return res.status(400).json({ error: "no Admin" });
+  }
+
+  const idPizza = req.params.id;
+  if (idPizza == "" || idPizza == undefined || idPizza == null) {
+    return res.status(400).json({ error: "no id" });
+  }
+  const name = req.body.name;
+  const price = req.body.price;
+  const content = req.body.content;
+  const image = req.body.image;
+
+  asyncLib.waterfall(
+    [
+      function (done) {
+        models.pizza
+          .findOne({
+            attributes: [`id`, `name`, `price`, `content`, `image`],
+            where: { id: idPizza },
+          })
+          .then(function (pizzaFound) {
+            done(null, pizzaFound);
+          })
+          .catch(function (err) {
+            return res.status(500).json({ error: "unable to verify pizza" });
+          });
+      },
+      function (pizzaFound, done) {
+        console.log(pizzaFound);
+        if (pizzaFound) {
+          pizzaFound
+            .update({
+              name: name ? name : pizzaFound.name,
+              price: price ? price : pizzaFound.price,
+              content: content ? content : pizzaFound.content,
+              image: image ? image : pizzaFound.image,
+            })
+            .then(function (pizzaFound) {
+              done(pizzaFound);
+            })
+            .catch(function (err) {
+              res.status(500).json({ error: "cannot update pizza" });
+            });
+        } else {
+          res.json({ error: "cannot found pizza" });
+        }
+      },
+    ],
+    function (pizzaFound) {
+      if (pizzaFound) {
+        const request = {
+          success: true,
+          pizzaFound: pizzaFound,
+        };
+        return res.status(201).json(request);
+      } else {
+        return res.status(500).json({ error: "cannot update Pizza" });
+      }
+    }
+  );
 });
 
 const ingredientNotExist = function (idIngredients) {

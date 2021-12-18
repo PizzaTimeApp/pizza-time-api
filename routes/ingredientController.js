@@ -123,7 +123,7 @@ router.get("/getIngredient/:id", (req, res) => {
     });
 });
 
-// Ingredient Delete
+// Delete Ingredient
 router.delete("/deleteIngredient/:id", (req, res) => {
   // Getting auth header
   const headerAuth = req.headers["authorization"];
@@ -185,7 +185,7 @@ router.delete("/deleteIngredient/:id", (req, res) => {
   );
 });
 
-// Update INgredient
+// Update Ingredient
 router.put("/updateIngredient/:id", (req, res) => {
   // Getting auth header
   const headerAuth = req.headers["authorization"];
@@ -227,6 +227,8 @@ router.put("/updateIngredient/:id", (req, res) => {
             .catch(function (err) {
               res.status(500).json({ error: "cannot update ingredient" });
             });
+        } else {
+          res.status(402).json({ error: "cannot find ingredient" });
         }
       },
     ],
