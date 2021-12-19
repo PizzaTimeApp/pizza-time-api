@@ -3,7 +3,11 @@ const router = express.Router();
 const models = require("../models");
 const jwtUtils = require("../utils/jwt.utils");
 const asyncLib = require("async");
-
+const multer = require("multer");
+const upload = multer({
+  dest: __dirname + "/../uploads/imagePizzas",
+  limits: { fileSize: 2000000 },
+});
 //get all pizzas
 router.get("/getPizzas", (req, res) => {
   const headerAuth = req.headers["authorization"];
@@ -48,7 +52,7 @@ router.get("/getPizzas", (req, res) => {
 });
 
 //Create Pizza
-router.post("/createPizza", (req, res) => {
+router.post("/createPizza", upload.single("image"), (req, res) => {
   //Getting auth header
   const headerAuth = req.headers["authorization"];
   const isAdmin = jwtUtils.getIsAdmin(headerAuth);
@@ -60,7 +64,7 @@ router.post("/createPizza", (req, res) => {
 
   const name = req.body.name;
   const price = req.body.price;
-  const image = req.body.image;
+  const image = req.file ? req.file.filename : req.body.image;
   const content = req.body.content;
   var ingredients = req.body.ingredients;
 
