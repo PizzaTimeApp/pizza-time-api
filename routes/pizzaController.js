@@ -3,11 +3,15 @@ const router = express.Router();
 const models = require("../models");
 const jwtUtils = require("../utils/jwt.utils");
 const asyncLib = require("async");
+const fs = require("fs");
 const multer = require("multer");
+const path = require("path");
+
 const upload = multer({
   dest: __dirname + "/../uploads/imagePizzas",
   limits: { fileSize: 2000000 },
 });
+
 //get all pizzas
 router.get("/getPizzas", (req, res) => {
   const headerAuth = req.headers["authorization"];
@@ -51,6 +55,20 @@ router.get("/getPizzas", (req, res) => {
     });
 });
 
+//get image Pizza
+router.get("/getImagePizza/:image", function (req, res) {
+  const headerAuth = req.headers["authorization"];
+  const userId = jwtUtils.getUserId(headerAuth);
+
+  if (userId < 0) {
+    return res.status(400).json({ error: "wrong token" });
+  }
+
+  const image = req.params.image;
+  res.setHeader("Content-Type", "image/*");
+  res.sendFile(path.join(__dirname + "/../uploads/imagePizzas", image));
+});
+
 //Create Pizza
 router.post("/createPizza", upload.single("image"), (req, res) => {
   //Getting auth header
@@ -59,6 +77,7 @@ router.post("/createPizza", upload.single("image"), (req, res) => {
   const userId = jwtUtils.getUserId(headerAuth);
 
   if (userId < 0) {
+    deletePizzaImage(image);
     return res.status(400).json({ error: "wrong token" });
   }
 
@@ -75,12 +94,14 @@ router.post("/createPizza", upload.single("image"), (req, res) => {
     })
     .then(async function (pizzaFound) {
       if (pizzaFound) {
+        deletePizzaImage(image);
         return res.json({ error: "Pizza already exist" });
       } else {
         ingredients = ingredients.split(",");
 
         if (await ingredientNotExist(ingredients)) {
           console.log("Ingredient not exist");
+          deletePizzaImage(image);
           return res.json({ error: "Ingredient not exist" });
         } else {
           await models.pizza
@@ -104,6 +125,7 @@ router.post("/createPizza", upload.single("image"), (req, res) => {
                     })
                     .catch(function (err) {
                       console.log(err);
+                      deletePizzaImage(image);
                       return res.json({
                         error: "unable to create pizzaIngredient",
                       });
@@ -115,11 +137,14 @@ router.post("/createPizza", upload.single("image"), (req, res) => {
                   ingredients: ingredients,
                 });
               } else {
+                console.log("cannot create newPizza");
+                deletePizzaImage(image);
                 return res.json({ error: "cannot create newPizza" });
               }
             })
             .catch(function (err) {
               console.log(err);
+              deletePizzaImage(image);
               return res.json({ error: "unable to create pizza" });
             });
         }
@@ -127,6 +152,7 @@ router.post("/createPizza", upload.single("image"), (req, res) => {
     })
     .catch(function (err) {
       console.log(err);
+      deletePizzaImage(image);
       return res.json({ error: "unable to verify pizza" });
     });
 });
@@ -329,4 +355,13 @@ const ingredientNotExist = function (idIngredients) {
   });
 };
 
+const deletePizzaImage = function (fileName) {
+  fs.unlink(__dirname + "/../uploads/imagePizzas/" + fileName, function (err) {
+    if (err) {
+      console.log("File Not exist : " + fileName);
+    } else {
+      console.log("File deleted! : " + fileName);
+    }
+  });
+};
 module.exports = router;
