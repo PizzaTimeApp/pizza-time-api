@@ -3,7 +3,7 @@ const router = express.Router();
 const models = require("../models");
 const jwtUtils = require("../utils/jwt.utils");
 const asyncLib = require("async");
-
+const response = require("../utils/response");
 //Create ingredient
 router.post("/createIngredient", (req, res) => {
   //Getting auth header
@@ -11,7 +11,8 @@ router.post("/createIngredient", (req, res) => {
   const isAdmin = jwtUtils.getIsAdmin(headerAuth);
   const name = req.body.name;
 
-  if (isAdmin != "admin") return res.json({ error: "no Admin" });
+  if (isAdmin != "admin")
+    return res.json(response.responseERROR("No AdminUser"));
 
   asyncLib.waterfall(
     [
@@ -25,12 +26,14 @@ router.post("/createIngredient", (req, res) => {
           })
           .catch(function (err) {
             console.log(err);
-            return res.json({ error: "unable to verify ingredient" });
+            return res.json(
+              response.responseERROR("Unable to verify ingredient")
+            );
           });
       },
       function (ingredientFound, done) {
         if (ingredientFound) {
-          return res.json({ error: "ingredient already exist" });
+          return res.json(response.responseERROR("Ingredient already exist"));
         } else {
           models.ingredient
             .create({
@@ -44,12 +47,13 @@ router.post("/createIngredient", (req, res) => {
     ],
     function (newIngredient) {
       if (newIngredient) {
-        return res.status(201).json({
-          success: true,
-          newIngredient: newIngredient,
-        });
+        return res.status(201).json(
+          response.responseOK("", {
+            newIngredient: newIngredient,
+          })
+        );
       } else {
-        return res.json({ error: "cannot create ingredient" });
+        return res.json(response.responseERROR("Cannot create ingredient"));
       }
     }
   );
@@ -61,7 +65,7 @@ router.get("/getIngredients", (req, res) => {
   const userId = jwtUtils.getUserId(headerAuth);
 
   if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
+    return res.status(401).json(response.responseERROR("Wrong Token"));
   }
   const limit = parseInt(req.query.limit);
   const offset = parseInt(req.query.offset);
@@ -81,12 +85,12 @@ router.get("/getIngredients", (req, res) => {
           ingredients: ingredients,
         });
       } else {
-        res.json({ error: "no ingredients found" });
+        res.status(200).json(response.responseERROR("Ingredients not found"));
       }
     })
     .catch(function (err) {
       console.log(err);
-      res.json({ error: "invalid fields" });
+      res.status(400).json(response.responseERROR("Invalid fields"));
     });
 });
 
@@ -100,7 +104,7 @@ router.get("/getIngredient/:id", (req, res) => {
     return res.json({ error: " id not defined" });
 
   if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
+    return res.status(400).json(response.responseERROR("Wrong Token"));
   }
 
   models.ingredient
@@ -225,7 +229,9 @@ router.put("/updateIngredient/:id", (req, res) => {
               done(ingredientFound);
             })
             .catch(function (err) {
-              return res.status(500).json({ error: "cannot update ingredient" });
+              return res
+                .status(500)
+                .json({ error: "cannot update ingredient" });
             });
         } else {
           res.status(402).json({ error: "cannot find ingredient" });
