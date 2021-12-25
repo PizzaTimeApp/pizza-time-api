@@ -19,7 +19,7 @@ module.exports = {
       },
       status: {
         type: Sequelize.ENUM,
-        values: ['new', 'pending payment', 'precessing', 'complete', 'closed', 'canceled']
+        values: ['new', 'pending payment', 'processing', 'complete', 'closed', 'canceled']
       },
       createdAt: {
         allowNull: false,

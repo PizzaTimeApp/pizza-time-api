@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
   };
   order.init({
     idUser: DataTypes.INTEGER,
-    status: DataTypes.ENUM('new', 'pending payment', 'precessing', 'complete', 'closed', 'canceled'),
+    status: DataTypes.ENUM('new', 'pending payment', 'processing', 'complete', 'closed', 'canceled'),
   }, {
     sequelize,
     modelName: 'order',

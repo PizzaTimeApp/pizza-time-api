@@ -1,5 +1,6 @@
 const nodemailer = require("nodemailer");
-const BASE_URL = "http://localhost:8100/api/user";
+
+require('dotenv').config()
 
 module.exports = {
     emailData:function(email, token) {
@@ -8,17 +9,17 @@ module.exports = {
             host: 'smtp.gmail.com',
             service: 'gmail',
             auth: {
-              user: 'compte.projetperso@gmail.com',
-              pass: 'quentindu13530',
+              user: process.env.USER_GMAIL,
+              pass: process.env.PASSWORD_GMAIL,
             },
           });
 
         const mailOptions = {
             from: "compte.projetperso@gmail.com", 
             to: email,
-            subject: "Account Reset Password Link",
+            subject: process.env.SUBJECT_GMAIL,
             html: `<p>Please click on the following link for reset your password :</p><br>
-            <a href="${BASE_URL}/resetpassword/${token}">${BASE_URL}/resetpassword/${token}</a>`
+            <a href="${process.env.BASE_URL_GMAIL}/resetpassword/${token}">${process.env.BASE_URL_GMAIL}/resetpassword/${token}</a>`
         };
 
         return new Promise(function(resolve, reject) {

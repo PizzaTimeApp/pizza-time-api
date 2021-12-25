@@ -1,5 +1,6 @@
 //Import
 const jwt = require('jsonwebtoken');
+require('dotenv').config()
 
 const JWT_SIGN_SECRET ='rXKiWvi9JvcXdqwfdEDHjhgtFTT65gybhb';
 const JWT_RESET_PASSWORD_SECRET ='BHBh75bFDLdfgfdg565ghfgc453f876N876n';
@@ -13,7 +14,7 @@ module.exports = {
         },
         JWT_SIGN_SECRET,
         {
-            expiresIn:'2h'
+            expiresIn:process.env.JWT_SIGN_EXPIRED
         })
     },
     generateTokenForResetPasswordUser: function(userData) {
@@ -22,7 +23,7 @@ module.exports = {
         }, 
         JWT_RESET_PASSWORD_SECRET,
         {
-            expiresIn:'10m'
+            expiresIn:process.env.JWT_RESET_PASSWORD_EXPIRED
         })
     },
     parseAuthorization:function(authorization) {

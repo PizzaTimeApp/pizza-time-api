@@ -48,7 +48,6 @@ router.post('/createOrder',(req, res) =>{
       done(null, pizzaIds, pizzas, userFound);
     },
     function (pizzaIds, pizzas, userFound, done) {
-      console.log(pizzaIds);
       pizzaNotExist(pizzaIds)
       .then(function(){
         done(null, pizzas, userFound);
@@ -99,13 +98,13 @@ router.post('/createOrder',(req, res) =>{
       }
     },
   ],
-  function(allReservations, newOrder) {
+  async function(allReservations, newOrder) {
+    let order = await getTotalAmount(allReservations, newOrder, false);
+    console.log(order);
     if (allReservations) {
-      newOrder["dataValues"]["totalAmount"];
-      console.log(newOrder);
       return res.status(201).json({
         success: true,
-        userOrder: newOrder, 
+        userOrder: order, 
         reservation : allReservations
       });
     }else {
@@ -113,37 +112,6 @@ router.post('/createOrder',(req, res) =>{
     }
   });
 });
-
-// Verify if pizza entity exist
-const pizzaNotExist = function (idPizzas) {
-  return new Promise(function (resolve, reject) {
-    let pizzaNotFound = false;
-    idPizzas.forEach(async (idPizza, index, array) => {
-      await models.pizza
-        .findOne({
-          where: { id: idPizza },
-        })
-        .then(function (pizzaFound) {
-          if (pizzaFound) {
-            console.log("pizza found : " + idPizza);
-          } else {
-            reject();
-            console.log("pizza not found : " + idPizza);
-            pizzaNotFound = true;
-          }
-        })
-        .catch(function (err) {
-          console.log(err);
-          console.log("unable to verify pizza");
-          pizzaNotFound = true;
-        });
-
-      if (index === array.length - 1) {
-        resolve(pizzaNotFound);
-      }
-    });
-  });
-};
 
 // Get My Orders
 router.get('/myOrders',(req,res)=>{
@@ -194,21 +162,11 @@ router.get('/myOrders',(req,res)=>{
                 attributes: ['id', 'name', 'price', 'creator', 'content', 'image']
               }]
           }]
-        }).then(function (orderReservation) {
-          // console.log(orderReservation["order"]["dataValues"]["idUser"]);
-          // orderReservation["dataValues"]["orderReservations"].forEach((orderReservations) => {
-          //   if(orderReservations.Length > 1) {
-          //     orderReservations.forEach((pizza) => {
-          //       console.log(pizza);
-          //       // console.log(orderReservations["orderReservations"]["pizza"]);
-          //     // })
-          //     })
-          //   } else {
-          //     console.log(orderReservations);
-          //   } 
-          // }
-          // });
+        }).then(async function (orderReservation) {
           if (orderReservation) {
+            // let totalAmount = await getTotalAmount(orderReservation,null, true);
+            // orderReservation.dataValues.totalAmount = totalAmount;
+            // console.log(totalAmount);
             const request = {
               success:true,
               orderReservation : orderReservation
@@ -430,12 +388,83 @@ router.get("/getUserOrders/:id", (req, res) => {
     ])
 });
 
+// Update Order 
+router.put("/updateOrder/:id", (req, res) => {
+  // Getting auth header
+  const headerAuth = req.headers["authorization"];
+  // const isAdmin = jwtUtils.getIsAdmin(headerAuth);
+
+  // if (isAdmin != "admin") {
+  //   return res.status(400).json({ error: "no Admin" });
+  // }
+
+  const idOrder = req.params.id;
+  if (idOrder == "" || idOrder == undefined || idOrder == null) {
+    return res.status(400).json({ error: "no id" });
+  }
+  const status = req.body.status;
+
+  let allStatus = ['new', 'pending payment', 'processing', 'complete', 'closed', 'canceled'];
+
+  console.log(status);
+  asyncLib.waterfall(
+    [
+      function (done) {
+        models.order
+          .findOne({
+            where: { id: idOrder },
+          })
+          .then(function (orderFound) {
+            done(null, orderFound);
+          })
+          .catch(function (err) {
+            return res.status(500).json({ error: "unable to verify order" });
+          });
+      },
+      function (orderFound, done) {
+        if (allStatus.includes(status) == true) {  
+            done(null, orderFound);
+        } else {
+          res.json({ error: "invalid status order" });
+        }
+      },
+      function (orderFound, done) {
+        if (orderFound) {
+          orderFound
+            .update({
+              status: status ? status : orderFound.status
+            })
+            .then(function (orderFound) {
+              done(orderFound);
+            })
+            .catch(function (err) {
+              res.status(500).json({ error: "cannot update order status" });
+            });
+        } else {
+          res.json({ error: "cannot found order" });
+        }
+      },
+    ],
+    function (orderFound) {
+      if (orderFound) {
+        const request = {
+          success: true,
+          orderFound: orderFound,
+        };
+        return res.status(201).json(request);
+      } else {
+        return res.status(500).json({ error: "cannot update order" });
+      }
+    }
+  );
+});
+
 // User Reservation Delete
-router.delete("/deleteMyReservation/:id", (req, res) => {
+router.delete("/deleteMyOrder/:id", (req, res) => {
   // Getting auth header
   const headerAuth = req.headers["authorization"];
   const userId = jwtUtils.getUserId(headerAuth);
-  const idReservation = req.params.id;
+  const idOrder = req.params.id;
 
   if (userId < 0) {
     return res.status(400).json({ error: "wrong token" });
@@ -444,51 +473,51 @@ router.delete("/deleteMyReservation/:id", (req, res) => {
   asyncLib.waterfall(
     [
       function (done) {
-        models.reservation
+        models.order
           .findOne({
             where: { 
-              id: idReservation,
+              id: idOrder,
               idUser: userId
             },
           })
-          .then(function (reservationFound) {
-            done(null, reservationFound);
+          .then(function (orderFound) {
+            done(null, orderFound);
           })
           .catch(function (err) {
             console.log(err);
             return res
               .status(500)
-              .json({ error: "unable to verify my reservation" });
+              .json({ error: "unable to verify my order" });
           });
       },
-      function (reservationFound, done) {
-        if (reservationFound) {
-          reservationFound
+      function (orderFound, done) {
+        if (orderFound) {
+          orderFound
             .destroy({
               where: {
-                id: idReservation,
+                id: idOrder,
               },
             })
-            .then(function (reservationFound) {
-              done(reservationFound);
+            .then(function (orderFound) {
+              done(orderFound);
             })
             .catch(function (err) {
-              res.status(500).json({ error: "cannot delete my reservation" });
+              res.status(500).json({ error: "cannot delete my order" });
             });
         } else {
-          return res.status(200).json({ error: "reservation not exist" });
+          return res.status(200).json({ error: "order not exist" });
         }
       },
     ],
-    function (reservationFound) {
-      if (reservationFound) {
+    function (orderFound) {
+      if (orderFound) {
         const request = {
           success: true,
-          idReservation: idReservation,
+          idOrder: idOrder,
         };
         return res.status(201).json(request);
       } else {
-        return res.status(500).json({ error: "cannot delete my reservation" });
+        return res.status(500).json({ error: "cannot delete my order" });
       }
     }
   );
@@ -496,7 +525,7 @@ router.delete("/deleteMyReservation/:id", (req, res) => {
 
 
 // User Reservation Delete
-router.delete("/deleteReservation/:id", (req, res) => {
+router.delete("/deleteOrder/:id", (req, res) => {
   // Getting auth header
   const headerAuth = req.headers["authorization"];
   const isAdmin = jwtUtils.getIsAdmin(headerAuth);
@@ -505,58 +534,176 @@ router.delete("/deleteReservation/:id", (req, res) => {
     return res.status(400).json({ error: "no Admin" });
   }
 
-  const idReservation = req.params.id;
+  const idOrder = req.params.id;
 
   asyncLib.waterfall(
     [
       function (done) {
-        models.reservation
+        models.order
           .findOne({
             where: { 
-              id: idReservation,
+              id: idOrder,
             },
           })
-          .then(function (reservationFound) {
-            done(null, reservationFound);
+          .then(function (orderFound) {
+            done(null, orderFound);
           })
           .catch(function (err) {
             console.log(err);
             return res
               .status(500)
-              .json({ error: "unable to verify my reservation" });
+              .json({ error: "unable to verify order" });
           });
       },
-      function (reservationFound, done) {
-        if (reservationFound) {
-          reservationFound
+      function (orderFound, done) {
+        if (orderFound) {
+          orderFound
             .destroy({
               where: {
-                id: idReservation,
+                id: idOrder,
               },
             })
-            .then(function (reservationFound) {
-              done(reservationFound);
+            .then(function (orderFound) {
+              done(orderFound);
             })
             .catch(function (err) {
-              res.status(500).json({ error: "cannot delete my reservation" });
+              res.status(500).json({ error: "cannot delete order" });
             });
         } else {
-          return res.status(200).json({ error: "reservation not exist" });
+          return res.status(200).json({ error: "order not exist" });
         }
       },
     ],
-    function (reservationFound) {
-      if (reservationFound) {
+    function (orderFound) {
+      if (orderFound) {
         const request = {
           success: true,
-          idReservation: idReservation,
+          idOrder: idOrder,
         };
         return res.status(201).json(request);
       } else {
-        return res.status(500).json({ error: "cannot delete my reservation" });
+        return res.status(500).json({ error: "cannot delete order" });
       }
     }
   );
 });
 
+
+// Verify if pizza entity exist
+const pizzaNotExist = function (idPizzas) {
+  return new Promise(function (resolve, reject) {
+    let pizzaNotFound = false;
+    idPizzas.forEach(async (idPizza, index, array) => {
+      await models.pizza
+        .findOne({
+          where: { id: idPizza },
+        })
+        .then(function (pizzaFound) {
+          if (pizzaFound) {
+            console.log("pizza found : " + idPizza);
+          } else {
+            reject();
+            console.log("pizza not found : " + idPizza);
+            pizzaNotFound = true;
+          }
+        })
+        .catch(function (err) {
+          console.log(err);
+          console.log("unable to verify pizza");
+          pizzaNotFound = true;
+        });
+
+      if (index === array.length - 1) {
+        resolve(pizzaNotFound);
+      }
+    });
+  });
+};
+
+
+// Verify if pizza entity exist
+const getTotalAmount = function (allReservations, newOrder = null, isGet) {
+  return new Promise(function (resolve, reject) {
+    if(isGet == false) {
+      let totalAmount = 0;
+      let i = 0;
+      allReservations.forEach(async (reservation) => {
+        let idPizza = reservation.idPizza;
+        let quantity = reservation.quantity;
+        console.log(reservation);
+        await models.pizza
+          .findOne({
+            where: { id: idPizza },
+          })
+          .then(function (pizzaFound) {
+            if (pizzaFound) {
+              totalAmount += (pizzaFound.price * quantity);
+            } else {
+              reject();
+              console.log("pizza not found : " + idPizza);
+              totalAmount = null;
+            }
+          })
+          .catch(function (err) {
+            console.log(err);
+            console.log("unable to verify pizza");
+          });
+          i++;
+        if (i >= allReservations.length) {
+          newOrder.dataValues.totalAmount = totalAmount;
+          resolve(newOrder);
+        }
+      });
+    } else {
+      // console.log(allReservations);
+      let totalAmount = 0;
+      let x = 0;
+      console.log("here");
+      iterateObject(allReservations);
+      // allReservations.forEach(async (reservation) => {
+        // console.log(reservation);
+        // console.log(reservation.orderReservation.quantity);
+        // reservation.orderReservation.forEach(async (pizza) => {
+        //     console.log(pizza);
+        //   // let price = test.price;
+        //   // let quantity = test.dataValues.quantity;
+        //   // console.log(reservation.quantity);
+        //   // totalAmount += (price * quantity);
+        //   // console.log(totalAmount);
+          // x++;
+          if (x >= allReservations.length) {
+            resolve(totalAmount);
+          } 
+        // });
+      // });
+    } 
+  });
+};
+
+const iterateObject = function(allReservations, quantity) {
+  let totalAmount = 0;
+ let test = allReservations;
+//  test.forEach(obj => {
+//     Object.entries(obj).forEach(([key, value]) => {
+//       console.log(`${key} ${value}`);
+//     });
+//     console.log('-------------------');
+//   });
+  // console.log(test);
+  // allReservations.forEach((reservation) => {
+  //   for(prop in reservation) {
+  //     if(typeof(reservation[prop]) == "object"){
+  //       iterateObject(reservation[prop]);
+  //     } else {
+  //       if(prop == "price") {
+  //           totalAmount += (reservation[prop] * quantity);
+  //           console.log(reservation[prop]);
+  //       }
+  //     }
+  //   }
+  // });
+};
+
 module.exports = router;
+
+
