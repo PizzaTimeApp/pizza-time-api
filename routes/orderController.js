@@ -394,11 +394,16 @@ router.get("/getUserOrders/:id", (req, res) => {
 router.put("/updateOrder/:id", (req, res) => {
   // Getting auth header
   const headerAuth = req.headers["authorization"];
+  const userId = jwtUtils.getUserId(headerAuth);
   // const isAdmin = jwtUtils.getIsAdmin(headerAuth);
 
   // if (isAdmin != "admin") {
   //   return res.status(400).json({ error: "no Admin" });
   // }
+
+  if (userId < 0) {
+    return res.status(400).json({ error: "wrong token" });
+  }
 
   const idOrder = req.params.id;
   if (idOrder == "" || idOrder == undefined || idOrder == null) {
