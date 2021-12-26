@@ -164,9 +164,7 @@ router.get('/myOrders',(req,res)=>{
           }]
         }).then(async function (orderReservation) {
           if (orderReservation) {
-            // let totalAmount = await getTotalAmount(orderReservation,null, true);
-            // orderReservation.dataValues.totalAmount = totalAmount;
-            // console.log(totalAmount);
+            await getTotalAmount(orderReservation,null, true);
             const request = {
               success:true,
               orderReservation : orderReservation
@@ -212,8 +210,9 @@ router.get("/getMyOrder/:id", (req, res) => {
         }]
       }]
     })
-    .then(function (orderFound) {
+    .then(async function (orderFound) {
       if (orderFound) {
+        await getTotalAmount(orderFound, null, true);
         res.status(200).json({
           success: true,
           order: orderFound,
@@ -258,8 +257,9 @@ router.get("/getOrder/:id", (req, res) => {
         }]
       }]
     })
-    .then(function (orderFound) {
+    .then(async function (orderFound) {
       if (orderFound) {
+        await getTotalAmount(orderFound, null, true);
         res.status(200).json({
           success: true,
           order: orderFound,
@@ -301,8 +301,9 @@ router.get("/getOrders", (req, res) => {
           attributes: ['id', 'name', 'price', 'creator', 'content', 'image']
         }]
     }]
-  }).then(function (orderReservation) {
+  }).then(async function (orderReservation) {
     if (orderReservation) {
+      await getTotalAmount(orderReservation, null, true);
       const request = {
         success:true,
         orderReservation : orderReservation
@@ -370,8 +371,9 @@ router.get("/getUserOrders/:id", (req, res) => {
               attributes: ['id', 'name', 'price', 'creator', 'content', 'image']
             }]
         }]
-      }).then(function (orderReservation) {
+      }).then(async function (orderReservation) {
         if (orderReservation) {
+          await getTotalAmount(orderReservation, null, true);
           const request = {
             success:true,
             orderReservation : orderReservation
@@ -655,53 +657,39 @@ const getTotalAmount = function (allReservations, newOrder = null, isGet) {
         }
       });
     } else {
-      // console.log(allReservations);
       let totalAmount = 0;
       let x = 0;
-      console.log("here");
-      iterateObject(allReservations);
-      // allReservations.forEach(async (reservation) => {
-        // console.log(reservation);
-        // console.log(reservation.orderReservation.quantity);
-        // reservation.orderReservation.forEach(async (pizza) => {
-        //     console.log(pizza);
-        //   // let price = test.price;
-        //   // let quantity = test.dataValues.quantity;
-        //   // console.log(reservation.quantity);
-        //   // totalAmount += (price * quantity);
-        //   // console.log(totalAmount);
-          // x++;
-          if (x >= allReservations.length) {
-            resolve(totalAmount);
-          } 
-        // });
-      // });
+      if (allReservations.length > 1) {
+        allReservations.forEach(async (reservation) => {
+          let orderReservations = reservation.orderReservations;
+          orderReservations.forEach(async (orderReservation) => {
+            let quantity = orderReservation.quantity;
+            let price = orderReservation.pizza.price;
+            totalAmount += (price * quantity);
+            reservation.dataValues.totalAmount = totalAmount;
+            x++;
+            if (x >= orderReservations.length) {
+              totalAmount = 0;
+              resolve();
+            }
+          })
+        });
+      } else {
+        let orderReservations = allReservations.orderReservations;
+        orderReservations.forEach(async (orderReservation) => {
+          let quantity = orderReservation.quantity;
+          let price = orderReservation.pizza.price;
+          totalAmount += (price * quantity);
+          allReservations.dataValues.totalAmount = totalAmount;
+          x++;
+          if (x >= orderReservations.length) {
+            totalAmount = 0;
+            resolve();
+          }
+        });
+      }
     } 
   });
-};
-
-const iterateObject = function(allReservations, quantity) {
-  let totalAmount = 0;
- let test = allReservations;
-//  test.forEach(obj => {
-//     Object.entries(obj).forEach(([key, value]) => {
-//       console.log(`${key} ${value}`);
-//     });
-//     console.log('-------------------');
-//   });
-  // console.log(test);
-  // allReservations.forEach((reservation) => {
-  //   for(prop in reservation) {
-  //     if(typeof(reservation[prop]) == "object"){
-  //       iterateObject(reservation[prop]);
-  //     } else {
-  //       if(prop == "price") {
-  //           totalAmount += (reservation[prop] * quantity);
-  //           console.log(reservation[prop]);
-  //       }
-  //     }
-  //   }
-  // });
 };
 
 module.exports = router;
