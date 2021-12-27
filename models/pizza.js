@@ -8,11 +8,6 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // models.pizza.hasOne(models.reservation, {
-      //   foreignKey: 'idPizza'
-      // });
-      // models.pizza.hasMany(models.reservation);
-      // models.pizza.belongsToMany(User, { through: 'reservation' });
       models.pizza.hasMany(models.pizzaIngredient, {
         onDelete: "cascade",
         foreignKey: "id",

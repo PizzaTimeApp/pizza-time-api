@@ -208,7 +208,6 @@ router.delete("/deletePizza/:id", (req, res) => {
   }
 
   const idPizza = req.params.id;
-
   asyncLib.waterfall(
     [
       function (done) {
@@ -217,6 +216,7 @@ router.delete("/deletePizza/:id", (req, res) => {
             where: { id: idPizza },
           })
           .then(function (pizzaFound) {
+            console.log(pizzaFound);
             done(null, pizzaFound);
           })
           .catch(function (err) {
@@ -245,6 +245,7 @@ router.delete("/deletePizza/:id", (req, res) => {
     ],
     function (pizzaFound) {
       if (pizzaFound) {
+        deletePizzaImage(pizzaFound.image);
         const request = {
           success: true,
           idPizza: idPizza,
