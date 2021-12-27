@@ -34,8 +34,14 @@ module.exports = {
   errorType: Object.freeze({
     NO_ADMIN: "No Admin",
     WRONG_TOKEN: "Wrong Token",
+    INVALID_FIELDS: "Invalid fields",
     INGREDIENT: Object.freeze({
       NOT_FOUND: "Ingredient not found",
+      UNABLE_TO_VERIFY: "Unable to verify ingredient",
+      NOEXIST: "Ingredient already exist",
+      CANT_CREATE : "Cannot create ingredient",
+      CANT_DELETE: "Cannot delete ingredient",
+      CANT_UPDATE: "Cannot update ingredient"
     }),
   }),
 };

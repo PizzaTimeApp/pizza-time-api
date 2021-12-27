@@ -7,8 +7,10 @@ const response = require("../utils/response");
 
 //Create ingredient
 router.post("/createIngredient", jwtUtils.verifyAdminToken, (req, res) => {
-  const name = req.body.name;
-
+  const name = req.body.name.trim();
+  if (!name) {
+    return res.json(response.responseERROR(response.errorType.INVALID_FIELDS));
+  }
   asyncLib.waterfall(
     [
       function (done) {
@@ -21,14 +23,12 @@ router.post("/createIngredient", jwtUtils.verifyAdminToken, (req, res) => {
           })
           .catch(function (err) {
             console.log(err);
-            return res.json(
-              response.responseERROR("Unable to verify ingredient")
-            );
+            return res.status(500).json( response.responseERROR(response.errorType.INGREDIENT.UNABLE_TO_VERIFY) );
           });
       },
       function (ingredientFound, done) {
         if (ingredientFound) {
-          return res.json(response.responseERROR("Ingredient already exist"));
+          return res.json(response.responseERROR(response.errorType.INGREDIENT.NOEXIST));
         } else {
           models.ingredient
             .create({
@@ -48,7 +48,7 @@ router.post("/createIngredient", jwtUtils.verifyAdminToken, (req, res) => {
           })
         );
       } else {
-        return res.json(response.responseERROR("Cannot create ingredient"));
+        return res.json(response.responseERROR(response.errorType.INGREDIENT.CANT_CREATE));
       }
     }
   );
@@ -84,16 +84,16 @@ router.get("/getIngredients", jwtUtils.verifyToken, (req, res) => {
     })
     .catch(function (err) {
       console.log(err);
-      res.status(400).json(response.responseERROR("Invalid fields"));
+      res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
     });
 });
 
 //get ingredient
 router.get("/getIngredient/:id", jwtUtils.verifyToken, (req, res) => {
-  const idIngredient = req.params.id;
+  const idIngredient = req.params.id.trim();
 
-  if (idIngredient == undefined || idIngredient == null || idIngredient == "") {
-    return res.status(400).json(response.responseERROR("Id not defined"));
+  if (!idIngredient ) {
+    return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
   }
 
   models.ingredient
@@ -118,14 +118,18 @@ router.get("/getIngredient/:id", jwtUtils.verifyToken, (req, res) => {
     .catch(function (err) {
       console.log(err);
       return res
-        .status(400)
-        .json(response.responseERROR("Unable to verify ingredient"));
+        .status(500)
+        .json(response.responseERROR(response.errorType.INGREDIENT.UNABLE_TO_VERIFY));
     });
 });
 
 // Delete Ingredient
 router.delete("/deleteIngredient/:id", jwtUtils.verifyAdminToken, (req, res) => {
-    const idIngredient = req.params.id;
+    const idIngredient = req.params.id.trim();
+
+    if(!idIngredient){
+      return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
+    }
 
     asyncLib.waterfall(
       [
@@ -141,7 +145,7 @@ router.delete("/deleteIngredient/:id", jwtUtils.verifyAdminToken, (req, res) => 
               console.log(err);
               return res
                 .status(500)
-                .json(response.responseERROR("Unable to verify ingredient"));
+                .json(response.responseERROR(response.errorType.INGREDIENT.UNABLE_TO_VERIFY));
             });
         },
         function (ingredientFound, done) {
@@ -158,12 +162,12 @@ router.delete("/deleteIngredient/:id", jwtUtils.verifyAdminToken, (req, res) => 
               .catch(function (err) {
                 return res
                   .status(500)
-                  .json(response.responseERROR("Cannot delete ingredient"));
+                  .json(response.responseERROR(response.errorType.INGREDIENT.CANT_DELETE));
               });
           } else {
             return res
               .status(200)
-              .json(response.responseERROR("Ingredient not exist"));
+              .json(response.responseERROR(response.errorType.INGREDIENT.NOEXIST));
           }
         },
       ],
@@ -177,7 +181,7 @@ router.delete("/deleteIngredient/:id", jwtUtils.verifyAdminToken, (req, res) => 
         } else {
           return res
             .status(500)
-            .json(response.responseERROR("Cannot delete ingredient"));
+            .json(response.responseERROR(response.errorType.INGREDIENT.CANT_DELETE));
         }
       }
     );
@@ -187,8 +191,12 @@ router.delete("/deleteIngredient/:id", jwtUtils.verifyAdminToken, (req, res) => 
 // Update Ingredient
 router.put("/updateIngredient/:id", jwtUtils.verifyAdminToken, (req, res) => {
 
-  const idIngredient = req.params.id;
-  const name = req.body.name;
+  const idIngredient = req.params.id.trim();
+  const name = req.body.name.trim();
+
+  if (!name || !idIngredient) {
+    return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
+  }
 
   asyncLib.waterfall(
     [
@@ -204,7 +212,7 @@ router.put("/updateIngredient/:id", jwtUtils.verifyAdminToken, (req, res) => {
           .catch(function (err) {
             return res
               .status(500)
-              .json(response.responseERROR("Unable to verify ingredient"));
+              .json(response.responseERROR(response.errorType.INGREDIENT.UNABLE_TO_VERIFY));
           });
       },
       function (ingredientFound, done) {
@@ -219,12 +227,12 @@ router.put("/updateIngredient/:id", jwtUtils.verifyAdminToken, (req, res) => {
             .catch(function (err) {
               return res
                 .status(500)
-                .json(response.responseERROR("Cannot update ingredient"));
+                .json(response.responseERROR(response.errorType.INGREDIENT.CANT_UPDATE));
             });
         } else {
           return res
             .status(402)
-            .json(response.responseERROR("Cannot find ingredient"));
+            .json(response.responseERROR(response.errorType.INGREDIENT.NOT_FOUND));
         }
       },
     ],
@@ -238,7 +246,7 @@ router.put("/updateIngredient/:id", jwtUtils.verifyAdminToken, (req, res) => {
       } else {
         return res
           .status(500)
-          .json(response.responseERROR("Cannot update Ingredient"));
+          .json(response.responseERROR(response.errorType.INGREDIENT.CANT_UPDATE));
       }
     }
   );
