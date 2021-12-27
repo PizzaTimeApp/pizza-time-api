@@ -13,13 +13,8 @@ const upload = multer({
 });
 
 //get all pizzas
-router.get("/getPizzas", (req, res) => {
-  const headerAuth = req.headers["authorization"];
-  const userId = jwtUtils.getUserId(headerAuth);
+router.get("/getPizzas", jwtUtils.verifyToken, (req, res) => {
 
-  if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
-  }
   const limit = parseInt(req.query.limit);
   const offset = parseInt(req.query.offset);
   const order = req.query.order;
@@ -56,13 +51,7 @@ router.get("/getPizzas", (req, res) => {
 });
 
 //get image Pizza
-router.get("/getImagePizza/:image", function (req, res) {
-  const headerAuth = req.headers["authorization"];
-  const userId = jwtUtils.getUserId(headerAuth);
-
-  if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
-  }
+router.get("/getImagePizza/:image", jwtUtils.verifyToken, function (req, res) {
 
   const image = req.params.image;
   res.setHeader("Content-Type", "image/*");
@@ -70,16 +59,9 @@ router.get("/getImagePizza/:image", function (req, res) {
 });
 
 //Create Pizza
-router.post("/createPizza", upload.single("image"), (req, res) => {
-  //Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
-  const userId = jwtUtils.getUserId(headerAuth);
+router.post("/createPizza",jwtUtils.verifyToken, upload.single("image"), (req, res) => {
+  const isAdmin = req.isAdmin
 
-  if (userId < 0) {
-    deletePizzaImage(image);
-    return res.status(400).json({ error: "wrong token" });
-  }
 
   const name = req.body.name;
   const price = req.body.price;
@@ -158,17 +140,12 @@ router.post("/createPizza", upload.single("image"), (req, res) => {
 });
 
 //Get Pizza
-router.get("/getPizza/:id", (req, res) => {
+router.get("/getPizza/:id", jwtUtils.verifyToken, (req, res) => {
   const idPizza = req.params.id;
-  const headerAuth = req.headers["authorization"];
-  const userId = jwtUtils.getUserId(headerAuth);
 
   if (idPizza == undefined || idPizza == null || idPizza == "")
     return res.json({ error: " id not defined" });
 
-  if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
-  }
 
   models.pizza
     .findOne({
@@ -198,14 +175,7 @@ router.get("/getPizza/:id", (req, res) => {
 });
 
 // Delete Pizza
-router.delete("/deletePizza/:id", (req, res) => {
-  // Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
-
-  if (isAdmin != "admin") {
-    return res.status(400).json({ error: "no Admin" });
-  }
+router.delete("/deletePizza/:id", jwtUtils.verifyAdminToken, (req, res) => {
 
   const idPizza = req.params.id;
   asyncLib.waterfall(
@@ -259,14 +229,7 @@ router.delete("/deletePizza/:id", (req, res) => {
 });
 
 // Update Pizza
-router.put("/updatePizza/:id", (req, res) => {
-  // Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
-
-  if (isAdmin != "admin") {
-    return res.status(400).json({ error: "no Admin" });
-  }
+router.put("/updatePizza/:id", jwtUtils.verifyAdminToken, (req, res) => {
 
   const idPizza = req.params.id;
   if (idPizza == "" || idPizza == undefined || idPizza == null) {
@@ -365,4 +328,5 @@ const deletePizzaImage = function (fileName) {
     }
   });
 };
+
 module.exports = router;

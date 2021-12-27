@@ -4,15 +4,10 @@ const models = require("../models");
 const jwtUtils = require("../utils/jwt.utils");
 const asyncLib = require("async");
 const response = require("../utils/response");
-//Create ingredient
-router.post("/createIngredient", (req, res) => {
-  //Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
-  const name = req.body.name;
 
-  if (isAdmin != "admin")
-    return res.json(response.responseERROR("No AdminUser"));
+//Create ingredient
+router.post("/createIngredient", jwtUtils.verifyAdminToken, (req, res) => {
+  const name = req.body.name;
 
   asyncLib.waterfall(
     [
@@ -60,13 +55,7 @@ router.post("/createIngredient", (req, res) => {
 });
 
 //get all ingredient
-router.get("/getIngredients", (req, res) => {
-  const headerAuth = req.headers["authorization"];
-  const userId = jwtUtils.getUserId(headerAuth);
-
-  if (userId < 0) {
-    return res.status(401).json(response.responseERROR("Wrong Token"));
-  }
+router.get("/getIngredients", jwtUtils.verifyToken, (req, res) => {
   const limit = parseInt(req.query.limit);
   const offset = parseInt(req.query.offset);
   const order = req.query.order;
@@ -80,12 +69,17 @@ router.get("/getIngredients", (req, res) => {
     })
     .then(function (ingredients) {
       if (ingredients) {
-        res.status(200).json({
-          success: true,
-          ingredients: ingredients,
-        });
+        return res.status(200).json(
+          response.responseOK("", {
+            ingredients: ingredients,
+          })
+        );
       } else {
-        res.status(200).json(response.responseERROR("Ingredients not found"));
+        res
+          .status(200)
+          .json(
+            response.responseERROR(response.errorType.INGREDIENT.NOT_FOUND)
+          );
       }
     })
     .catch(function (err) {
@@ -95,16 +89,11 @@ router.get("/getIngredients", (req, res) => {
 });
 
 //get ingredient
-router.get("/getIngredient/:id", (req, res) => {
+router.get("/getIngredient/:id", jwtUtils.verifyToken, (req, res) => {
   const idIngredient = req.params.id;
-  const headerAuth = req.headers["authorization"];
-  const userId = jwtUtils.getUserId(headerAuth);
 
-  if (idIngredient == undefined || idIngredient == null || idIngredient == "")
-    return res.json({ error: " id not defined" });
-
-  if (userId < 0) {
-    return res.status(400).json(response.responseERROR("Wrong Token"));
+  if (idIngredient == undefined || idIngredient == null || idIngredient == "") {
+    return res.status(400).json(response.responseERROR("Id not defined"));
   }
 
   models.ingredient
@@ -113,91 +102,90 @@ router.get("/getIngredient/:id", (req, res) => {
     })
     .then(function (ingredientFound) {
       if (ingredientFound) {
-        res.status(200).json({
-          success: true,
-          ingredients: ingredientFound,
-        });
+        return res.status(200).json(
+          response.responseOK("", {
+            ingredient: ingredientFound,
+          })
+        );
       } else {
-        res.json({ error: "no ingredients found" });
+        return res
+          .status(400)
+          .json(
+            response.responseERROR(response.errorType.INGREDIENT.NOT_FOUND)
+          );
       }
     })
     .catch(function (err) {
       console.log(err);
-      return res.json({ error: "unable to verify ingredient" });
+      return res
+        .status(400)
+        .json(response.responseERROR("Unable to verify ingredient"));
     });
 });
 
 // Delete Ingredient
-router.delete("/deleteIngredient/:id", (req, res) => {
-  // Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
+router.delete("/deleteIngredient/:id", jwtUtils.verifyAdminToken, (req, res) => {
+    const idIngredient = req.params.id;
 
-  if (isAdmin != "admin") {
-    return res.status(400).json({ error: "no Admin" });
-  }
-
-  const idIngredient = req.params.id;
-
-  asyncLib.waterfall(
-    [
-      function (done) {
-        models.ingredient
-          .findOne({
-            where: { id: idIngredient },
-          })
-          .then(function (ingredientFound) {
-            done(null, ingredientFound);
-          })
-          .catch(function (err) {
-            console.log(err);
-            return res
-              .status(500)
-              .json({ error: "unable to verify ingredient" });
-          });
-      },
-      function (ingredientFound, done) {
-        if (ingredientFound) {
-          ingredientFound
-            .destroy({
-              where: {
-                id: idIngredient,
-              },
+    asyncLib.waterfall(
+      [
+        function (done) {
+          models.ingredient
+            .findOne({
+              where: { id: idIngredient },
             })
             .then(function (ingredientFound) {
-              done(ingredientFound);
+              done(null, ingredientFound);
             })
             .catch(function (err) {
-              res.status(500).json({ error: "cannot delete ingredient" });
+              console.log(err);
+              return res
+                .status(500)
+                .json(response.responseERROR("Unable to verify ingredient"));
             });
+        },
+        function (ingredientFound, done) {
+          if (ingredientFound) {
+            ingredientFound
+              .destroy({
+                where: {
+                  id: idIngredient,
+                },
+              })
+              .then(function (ingredientFound) {
+                done(ingredientFound);
+              })
+              .catch(function (err) {
+                return res
+                  .status(500)
+                  .json(response.responseERROR("Cannot delete ingredient"));
+              });
+          } else {
+            return res
+              .status(200)
+              .json(response.responseERROR("Ingredient not exist"));
+          }
+        },
+      ],
+      function (ingredientFound) {
+        if (ingredientFound) {
+          return res.status(200).json(
+            response.responseOK("", {
+              idIngredient: idIngredient,
+            })
+          );
         } else {
-          return res.status(200).json({ error: "ingredient not exist" });
+          return res
+            .status(500)
+            .json(response.responseERROR("Cannot delete ingredient"));
         }
-      },
-    ],
-    function (ingredientFound) {
-      if (ingredientFound) {
-        const request = {
-          success: true,
-          idIngredient: idIngredient,
-        };
-        return res.status(201).json(request);
-      } else {
-        return res.status(500).json({ error: "cannot delete ingredient" });
       }
-    }
-  );
-});
+    );
+  }
+);
 
 // Update Ingredient
-router.put("/updateIngredient/:id", (req, res) => {
-  // Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
-
-  if (isAdmin != "admin") {
-    return res.status(400).json({ error: "no Admin" });
-  }
+router.put("/updateIngredient/:id", jwtUtils.verifyAdminToken, (req, res) => {
 
   const idIngredient = req.params.id;
   const name = req.body.name;
@@ -216,7 +204,7 @@ router.put("/updateIngredient/:id", (req, res) => {
           .catch(function (err) {
             return res
               .status(500)
-              .json({ error: "unable to verify ingredient" });
+              .json(response.responseERROR("Unable to verify ingredient"));
           });
       },
       function (ingredientFound, done) {
@@ -231,22 +219,26 @@ router.put("/updateIngredient/:id", (req, res) => {
             .catch(function (err) {
               return res
                 .status(500)
-                .json({ error: "cannot update ingredient" });
+                .json(response.responseERROR("Cannot update ingredient"));
             });
         } else {
-          res.status(402).json({ error: "cannot find ingredient" });
+          return res
+            .status(402)
+            .json(response.responseERROR("Cannot find ingredient"));
         }
       },
     ],
     function (ingredientFound) {
       if (ingredientFound) {
-        const request = {
-          success: true,
-          ingredient: ingredientFound,
-        };
-        return res.status(201).json(request);
+        return res.status(201).json(
+          response.responseOK("", {
+            ingredient: ingredientFound,
+          })
+        );
       } else {
-        return res.status(500).json({ error: "cannot update Ingredient" });
+        return res
+          .status(500)
+          .json(response.responseERROR("Cannot update Ingredient"));
       }
     }
   );

@@ -193,13 +193,9 @@ router.post("/login", (req, res) => {
 });
 
 // User Profile
-router.get("/profile", (req, res) => {
-  const headerAuth = req.headers["authorization"];
-  const userId = jwtUtils.getUserId(headerAuth);
+router.get("/profile", jwtUtils.verifyToken, (req, res) => {
+  const userId = req.idUser
 
-  if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
-  }
   models.user
     .findOne({
       attributes: [
@@ -234,14 +230,9 @@ router.get("/profile", (req, res) => {
 });
 
 // User Update Profile
-router.put("/profile", (req, res) => {
-  // Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const userId = jwtUtils.getUserId(headerAuth);
+router.put("/profile", jwtUtils.verifyToken, (req, res) => {
+  const userId = req.idUser;
 
-  if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
-  }
 
   // Params
   const email = req.body.email;
@@ -364,14 +355,8 @@ router.put("/profile", (req, res) => {
 });
 
 // User Update Password
-router.put("/updatePassword", (req, res) => {
-  // Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const userId = jwtUtils.getUserId(headerAuth);
-
-  if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
-  }
+router.put("/updatePassword", jwtUtils.verifyToken, (req, res) => {
+  const userId = req.idUser
 
   // Params
   const password = req.body.password;
@@ -447,14 +432,8 @@ router.put("/updatePassword", (req, res) => {
 });
 
 // User Delete
-router.delete("/profile", (req, res) => {
-  // Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const userId = jwtUtils.getUserId(headerAuth);
-
-  if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
-  }
+router.delete("/profile", jwtUtils.verifyToken, (req, res) => {
+  const userId = req.idUser
 
   asyncLib.waterfall(
     [
@@ -653,14 +632,7 @@ router.put("/resetPassword/:token", (req, res) => {
 });
 
 // User Delete Admin
-router.delete("/deleteUser/:id", (req, res) => {
-  // Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
-
-  if (isAdmin != "admin") {
-    return res.status(400).json({ error: "no Admin" });
-  }
+router.delete("/deleteUser/:id", jwtUtils.verifyAdminToken, (req, res) => {
 
   const idDeletedUser = req.params.id;
   if (idDeletedUser <= 0) {
@@ -716,13 +688,7 @@ router.delete("/deleteUser/:id", (req, res) => {
 });
 
 //Get Users
-router.get("/getUsers", (req, res) => {
-  const headerAuth = req.headers["authorization"];
-  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
-
-  if (isAdmin != "admin") {
-    return res.status(400).json({ error: "no Admin" });
-  }
+router.get("/getUsers", jwtUtils.verifyAdminToken, (req, res) => {
 
   const limit = parseInt(req.query.limit);
   const offset = parseInt(req.query.offset);
@@ -764,14 +730,8 @@ router.get("/getUsers", (req, res) => {
 });
 
 //get User by id
-router.get("/getUser/:id", (req, res) => {
+router.get("/getUser/:id", jwtUtils.verifyAdminToken, (req, res) => {
   const idUser = req.params.id;
-  const headerAuth = req.headers["authorization"];
-  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
-
-  if (isAdmin != "admin") {
-    return res.status(400).json({ error: "no Admin" });
-  }
 
   if (idUser == undefined || idUser == null || idUser == "")
     return res.json({ error: " id not defined" });

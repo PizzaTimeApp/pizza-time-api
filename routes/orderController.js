@@ -6,10 +6,9 @@ const jwtUtils = require('../utils/jwt.utils');
 const asyncLib = require('async');
 
 // Create Order
-router.post('/createOrder',(req, res) =>{
+router.post('/createOrder', jwtUtils.verifyToken, (req, res) =>{
   //Getting auth header
-  const headerAuth = req.headers['authorization'];
-  const userId = jwtUtils.getUserId(headerAuth);
+  const userId = req.idUser;
   const pizzaId = req.body.idPizza;
   const quantity = req.body.quantity;
 
@@ -114,18 +113,12 @@ router.post('/createOrder',(req, res) =>{
 });
 
 // Get My Orders
-router.get('/myOrders',(req,res)=>{
+router.get('/myOrders', jwtUtils.verifyToken, (req,res)=>{
   const limit = parseInt(req.query.limit);
   const offset = parseInt(req.query.offset);
   const order = req.query.order;
 
-  // Getting auth header
-  const headerAuth = req.headers['authorization'];
-  const userId = jwtUtils.getUserId(headerAuth);
-
-  if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
-  }
+  const userId = req.idUser;
 
   asyncLib.waterfall(
     [
@@ -183,10 +176,9 @@ router.get('/myOrders',(req,res)=>{
 });
 
 // Get Order
-router.get("/getMyOrder/:id", (req, res) => {
+router.get("/getMyOrder/:id", jwtUtils.verifyToken, (req, res) => {
   const idOrder = req.params.id;
-  const headerAuth = req.headers["authorization"];
-  const idUser = jwtUtils.getUserId(headerAuth);
+  const idUser = req.idUser;
 
   if (idOrder == undefined || idOrder == null || idOrder == "")
     return res.json({ error: " id not defined" });
@@ -228,20 +220,12 @@ router.get("/getMyOrder/:id", (req, res) => {
 });
 
 // Get Order
-router.get("/getOrder/:id", (req, res) => {
+router.get("/getOrder/:id", jwtUtils.verifyAdminToken, (req, res) => {
   const idOrder = req.params.id;
-  const headerAuth = req.headers["authorization"];
-  const idUser = jwtUtils.getUserId(headerAuth);
-  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
 
   if (idOrder == undefined || idOrder == null || idOrder == "")
     return res.json({ error: " id not defined" });
-  if (idUser < 0) {
-    return res.status(400).json({ error: "wrong token" });
-  }
-  if (isAdmin != "admin") {
-    return res.status(400).json({ error: "no Admin" });
-  }
+
 
   models.order
     .findOne({
@@ -275,15 +259,7 @@ router.get("/getOrder/:id", (req, res) => {
 });
 
 // Get all Orders
-router.get("/getOrders", (req, res) => {
-  // Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const userId = jwtUtils.getUserId(headerAuth);
-  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
-
-  if (isAdmin != "admin") {
-    return res.status(400).json({ error: "no Admin" });
-  }
+router.get("/getOrders", jwtUtils.verifyAdminToken,(req, res) => {
 
   const limit = parseInt(req.query.limit);
   const offset = parseInt(req.query.offset);
@@ -320,18 +296,11 @@ router.get("/getOrders", (req, res) => {
 
 
 // Get all User Orders
-router.get("/getUserOrders/:id", (req, res) => {
-  // Getting auth header
-  const headerAuth = req.headers["authorization"];
+router.get("/getUserOrders/:id", jwtUtils.verifyAdminToken, (req, res) => {
   const idUser = req.params.id;
-  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
 
   if (idUser == undefined || idUser == null || idUser == "")
     return res.json({ error: " id not defined" });
-
-  if (isAdmin != "admin") {
-    return res.status(400).json({ error: "no Admin" });
-  }
 
   const limit = parseInt(req.query.limit);
   const offset = parseInt(req.query.offset);
@@ -391,15 +360,7 @@ router.get("/getUserOrders/:id", (req, res) => {
 });
 
 // Update Order 
-router.put("/updateOrder/:id", (req, res) => {
-  // Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const userId = jwtUtils.getUserId(headerAuth);
-  // const isAdmin = jwtUtils.getIsAdmin(headerAuth);
-
-  // if (isAdmin != "admin") {
-  //   return res.status(400).json({ error: "no Admin" });
-  // }
+router.put("/updateOrder/:id", jwtUtils.verifyToken, (req, res) => {
 
   if (userId < 0) {
     return res.status(400).json({ error: "wrong token" });
@@ -467,15 +428,8 @@ router.put("/updateOrder/:id", (req, res) => {
 });
 
 // User Reservation Delete
-router.delete("/deleteMyOrder/:id", (req, res) => {
-  // Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const userId = jwtUtils.getUserId(headerAuth);
+router.delete("/deleteMyOrder/:id", jwtUtils.verifyToken, (req, res) => {
   const idOrder = req.params.id;
-
-  if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
-  }
 
   asyncLib.waterfall(
     [
@@ -530,16 +484,8 @@ router.delete("/deleteMyOrder/:id", (req, res) => {
   );
 });
 
-
 // User Reservation Delete
-router.delete("/deleteOrder/:id", (req, res) => {
-  // Getting auth header
-  const headerAuth = req.headers["authorization"];
-  const isAdmin = jwtUtils.getIsAdmin(headerAuth);
-
-  if (isAdmin != "admin") {
-    return res.status(400).json({ error: "no Admin" });
-  }
+router.delete("/deleteOrder/:id", jwtUtils.verifyAdminToken, (req, res) => {
 
   const idOrder = req.params.id;
 
@@ -595,7 +541,6 @@ router.delete("/deleteOrder/:id", (req, res) => {
   );
 });
 
-
 // Verify if pizza entity exist
 const pizzaNotExist = function (idPizzas) {
   return new Promise(function (resolve, reject) {
@@ -626,7 +571,6 @@ const pizzaNotExist = function (idPizzas) {
     });
   });
 };
-
 
 // Verify if pizza entity exist
 const getTotalAmount = function (allReservations, newOrder = null, isGet) {

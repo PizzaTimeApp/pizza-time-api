@@ -31,4 +31,11 @@ module.exports = {
       body: body,
     };
   },
+  errorType: Object.freeze({
+    NO_ADMIN: "No Admin",
+    WRONG_TOKEN: "Wrong Token",
+    INGREDIENT: Object.freeze({
+      NOT_FOUND: "Ingredient not found",
+    }),
+  }),
 };
