@@ -4,15 +4,12 @@ require("dotenv").config();
 
 const response = require("./response");
 
-const JWT_SIGN_SECRET = "rXKiWvi9JvcXdqwfdEDHjhgtFTT65gybhb";
-const JWT_RESET_PASSWORD_SECRET = "BHBh75bFDLdfgfdg565ghfgc453f876N876n";
-
 function getUserId(authorization) {
   var userId = -1;
   var token = module.exports.parseAuthorization(authorization);
   if (token != null) {
     try {
-      var jwtToken = jwt.verify(token, JWT_SIGN_SECRET);
+      var jwtToken = jwt.verify(token, process.env.JWT_SIGN_SECRET);
       if (jwtToken != null) userId = jwtToken.userId;
     } catch (err) {}
   }
@@ -23,7 +20,7 @@ function getIsAdmin(authorization) {
   var token = module.exports.parseAuthorization(authorization);
   if (token != null) {
     try {
-      var jwtToken = jwt.verify(token, JWT_SIGN_SECRET);
+      var jwtToken = jwt.verify(token, process.env.JWT_SIGN_SECRET);
       if (jwtToken != null) isAdmin = jwtToken.isAdmin;
     } catch (err) {}
   }
@@ -37,7 +34,7 @@ module.exports = {
         userId: userData.id,
         isAdmin: userData.isAdmin,
       },
-      JWT_SIGN_SECRET,
+      process.env.JWT_SIGN_SECRET,
       {
         expiresIn: process.env.JWT_SIGN_EXPIRED,
       }
@@ -48,7 +45,7 @@ module.exports = {
       {
         userId: userData.id,
       },
-      JWT_RESET_PASSWORD_SECRET,
+      process.env.JWT_RESET_PASSWORD_SECRET,
       {
         expiresIn: process.env.JWT_RESET_PASSWORD_EXPIRED,
       }
@@ -62,7 +59,7 @@ module.exports = {
     var userId = -1;
     if (token != null) {
       try {
-        var jwtToken = jwt.verify(token, JWT_RESET_PASSWORD_SECRET);
+        var jwtToken = jwt.verify(token, process.env.JWT_RESET_PASSWORD_SECRET);
         if (jwtToken != null) userId = jwtToken.userId;
       } catch (err) {}
     }
