@@ -9,8 +9,7 @@ const asyncLib = require('async');
 router.post('/createOrder', jwtUtils.verifyToken, (req, res) =>{
   //Getting auth header
   const userId = req.idUser;
-  const pizzaId = req.body.idPizza;
-  const quantity = req.body.quantity;
+  const pizzas = req.body
 
   if (userId < 0) {
     return res.status(400).json({ error: "wrong token" });
@@ -37,7 +36,6 @@ router.post('/createOrder', jwtUtils.verifyToken, (req, res) =>{
       });
     },
     function(userFound, done){
-      let pizzas = req.body;
       let pizzaIds = [];
       let pizzaQuantities = [];
       for(let i = 0; i < pizzas.length; i++) {
@@ -99,7 +97,6 @@ router.post('/createOrder', jwtUtils.verifyToken, (req, res) =>{
   ],
   async function(allReservations, newOrder) {
     let order = await getTotalAmount(allReservations, newOrder, false);
-    console.log(order);
     if (allReservations) {
       return res.status(201).json({
         success: true,
@@ -374,7 +371,6 @@ router.put("/updateOrder/:id", jwtUtils.verifyToken, (req, res) => {
 
   let allStatus = ['new', 'pending payment', 'processing', 'complete', 'closed', 'canceled'];
 
-  console.log(status);
   asyncLib.waterfall(
     [
       function (done) {
@@ -581,7 +577,6 @@ const getTotalAmount = function (allReservations, newOrder = null, isGet) {
       allReservations.forEach(async (reservation) => {
         let idPizza = reservation.idPizza;
         let quantity = reservation.quantity;
-        console.log(reservation);
         await models.pizza
           .findOne({
             where: { id: idPizza },
