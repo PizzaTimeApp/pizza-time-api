@@ -38,7 +38,8 @@ module.exports = {
     INGREDIENT: Object.freeze({
       NOT_FOUND: "Ingredient not found",
       UNABLE_TO_VERIFY: "Unable to verify ingredient",
-      NOEXIST: "Ingredient already exist",
+      EXIST: "Ingredient already exist",
+      NOEXIST:"Ingredient not exist",
       CANT_CREATE : "Cannot create ingredient",
       CANT_DELETE: "Cannot delete ingredient",
       CANT_UPDATE: "Cannot update ingredient"
@@ -66,6 +67,24 @@ module.exports = {
       CANT_ADD_PASSWORD_REQUEST: "Cannot add user reset password request",
       CANT_SEND_PASSWORD_REQUEST: "Cannot send reset password email",
       CANT_RESET_PASSWORD: "Cannot reset user password"
+    }),
+    PIZZA_INGREDIENT:Object.freeze({
+      NOT_FOUND: "PizzaIngredient not found",
+      UNABLE_TO_VERIFY: "Unable to verify pizzaIngredient",
+      EXIST: "PizzaIngredient already exist",
+      NOEXIST: "PizzaIngredient not exist",
+      CANT_CREATE : "Cannot create pizzaIngredient",
+      CANT_DELETE: "Cannot delete pizzaIngredient",
+      CANT_UPDATE: "Cannot update pizzaIngredient"
+    }),
+    PIZZA: Object.freeze({
+      NOT_FOUND: "Pizza not found",
+      UNABLE_TO_VERIFY: "Unable to verify pizza",
+      EXIST: "Pizza already exist",
+      NOEXIST: "Pizza not exist",
+      CANT_CREATE : "Cannot create pizza",
+      CANT_DELETE: "Cannot delete pizza",
+      CANT_UPDATE: "Cannot update pizza"
     }),
   }),
 };

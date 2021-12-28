@@ -6,6 +6,7 @@ const asyncLib = require("async");
 const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
+const response = require("../utils/response");
 
 const upload = multer({
   dest: __dirname + "/../uploads/imagePizzas",
@@ -36,24 +37,24 @@ router.get("/getPizzas", jwtUtils.verifyToken, (req, res) => {
     })
     .then(function (pizzas) {
       if (pizzas) {
-        res.status(200).json({
-          success: true,
-          pizzas: pizzas,
-        });
+        return res.status(200).json(response.responseOK("",{pizzas: pizzas}))
       } else {
-        res.json({ error: "no pizzas found" });
+      return res.status(400).json(response.responseERROR(response.errorType.PIZZA.NOT_FOUND));
       }
     })
     .catch(function (err) {
       console.log(err);
-      res.json({ error: "invalid fields" });
+      return res.status(500).json(response.responseERROR(response.errorType.INVALID_FIELDS));
     });
 });
 
 //get image Pizza
 router.get("/getImagePizza/:image", jwtUtils.verifyToken, function (req, res) {
 
-  const image = req.params.image;
+  const image = req.params.image.trim();
+  if (!image) {
+    return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
+  }
   res.setHeader("Content-Type", "image/*");
   res.sendFile(path.join(__dirname + "/../uploads/imagePizzas", image));
 });
@@ -62,13 +63,15 @@ router.get("/getImagePizza/:image", jwtUtils.verifyToken, function (req, res) {
 router.post("/createPizza",jwtUtils.verifyToken, upload.single("image"), (req, res) => {
   const isAdmin = req.isAdmin
 
+  const name = req.body.name.trim();
+  const price = req.body.price.trim();
+  const image = req.file.filename.trim();
+  const content = req.body.content.trim();
+  var ingredients = req.body.ingredients.trim();
 
-  const name = req.body.name;
-  const price = req.body.price;
-  const image = req.file ? req.file.filename : req.body.image;
-  const content = req.body.content;
-  var ingredients = req.body.ingredients;
-
+  if (!name || !price || !image || !content || !ingredients) {
+    return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
+  }
   //without waterfall
   models.pizza
     .findOne({
@@ -77,14 +80,14 @@ router.post("/createPizza",jwtUtils.verifyToken, upload.single("image"), (req, r
     .then(async function (pizzaFound) {
       if (pizzaFound) {
         deletePizzaImage(image);
-        return res.json({ error: "Pizza already exist" });
+        return res.status(400).json(response.responseERROR(response.errorType.PIZZA.EXIST));
       } else {
         ingredients = ingredients.split(",");
 
         if (await ingredientNotExist(ingredients)) {
           console.log("Ingredient not exist");
           deletePizzaImage(image);
-          return res.json({ error: "Ingredient not exist" });
+          return res.status(400).json(response.responseERROR(response.errorType.INGREDIENT.NOEXIST));
         } else {
           await models.pizza
             .create({
@@ -108,26 +111,19 @@ router.post("/createPizza",jwtUtils.verifyToken, upload.single("image"), (req, r
                     .catch(function (err) {
                       console.log(err);
                       deletePizzaImage(image);
-                      return res.json({
-                        error: "unable to create pizzaIngredient",
-                      });
+                      return res.status(500).json(response.responseERROR(response.errorType.PIZZA_INGREDIENT.CANT_CREATE));
                     });
                 });
-                return res.status(201).json({
-                  success: true,
-                  newPizza: newPizza,
-                  ingredients: ingredients,
-                });
+                return res.status(201).json(response.responseOK("", {newPizza: newPizza, ingredients: ingredients}))
               } else {
-                console.log("cannot create newPizza");
                 deletePizzaImage(image);
-                return res.json({ error: "cannot create newPizza" });
+                return res.status(500).json(response.responseERROR(response.errorType.PIZZA.CANT_CREATE));
               }
             })
             .catch(function (err) {
               console.log(err);
               deletePizzaImage(image);
-              return res.json({ error: "unable to create pizza" });
+              return res.status(500).json(response.responseERROR(response.errorType.PIZZA.CANT_CREATE));
             });
         }
       }
@@ -135,18 +131,18 @@ router.post("/createPizza",jwtUtils.verifyToken, upload.single("image"), (req, r
     .catch(function (err) {
       console.log(err);
       deletePizzaImage(image);
-      return res.json({ error: "unable to verify pizza" });
+      return res.status(500).json(response.responseERROR(response.errorType.PIZZA.UNABLE_TO_VERIFY));
     });
 });
 
 //Get Pizza
 router.get("/getPizza/:id", jwtUtils.verifyToken, (req, res) => {
-  const idPizza = req.params.id;
+  const idPizza = req.params.id.trim();
 
-  if (idPizza == undefined || idPizza == null || idPizza == "")
-    return res.json({ error: " id not defined" });
-
-
+  if (!idPizza){
+    return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
+  }
+  
   models.pizza
     .findOne({
       where: { id: idPizza },
@@ -160,24 +156,26 @@ router.get("/getPizza/:id", jwtUtils.verifyToken, (req, res) => {
     })
     .then(function (pizzaFound) {
       if (pizzaFound) {
-        res.status(200).json({
-          success: true,
-          pizza: pizzaFound,
-        });
+        return res.status(200).json(response.responseOK("", {pizza: pizzaFound}));
       } else {
-        res.json({ error: "no pizza found" });
+        return res.status(500).json(response.responseERROR(response.errorType.PIZZA.NOT_FOUND));
       }
     })
     .catch(function (err) {
       console.log(err);
-      return res.json({ error: "unable to verify pizza" });
+      return res.status(500).json(response.responseERROR(response.errorType.PIZZA.UNABLE_TO_VERIFY));
     });
 });
 
 // Delete Pizza
 router.delete("/deletePizza/:id", jwtUtils.verifyAdminToken, (req, res) => {
 
-  const idPizza = req.params.id;
+  const idPizza = req.params.id.trim();
+
+  if(!idPizza){
+    return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
+  }
+
   asyncLib.waterfall(
     [
       function (done) {
@@ -186,12 +184,11 @@ router.delete("/deletePizza/:id", jwtUtils.verifyAdminToken, (req, res) => {
             where: { id: idPizza },
           })
           .then(function (pizzaFound) {
-            console.log(pizzaFound);
             done(null, pizzaFound);
           })
           .catch(function (err) {
             console.log(err);
-            return res.status(500).json({ error: "unable to verify pizza" });
+            return res.status(500).json(response.responseERROR(response.errorType.PIZZA.UNABLE_TO_VERIFY));
           });
       },
       function (pizzaFound, done) {
@@ -206,23 +203,19 @@ router.delete("/deletePizza/:id", jwtUtils.verifyAdminToken, (req, res) => {
               done(pizzaFound);
             })
             .catch(function (err) {
-              res.status(500).json({ error: "cannot delete pizza" });
+              return res.status(500).json(response.responseERROR(response.errorType.PIZZA.CANT_DELETE));
             });
         } else {
-          return res.status(200).json({ error: "pizza not exist" });
+          return res.status(400).json(response.responseERROR(response.errorType.PIZZA.NOEXIST));
         }
       },
     ],
     function (pizzaFound) {
       if (pizzaFound) {
         deletePizzaImage(pizzaFound.image);
-        const request = {
-          success: true,
-          idPizza: idPizza,
-        };
-        return res.status(201).json(request);
+        return res.status(201).json(response.responseOK("", {idPizza: idPizza}));
       } else {
-        return res.status(500).json({ error: "cannot delete pizza" });
+        return res.status(500).json(response.responseERROR(response.errorType.PIZZA.CANT_DELETE));
       }
     }
   );
@@ -231,9 +224,9 @@ router.delete("/deletePizza/:id", jwtUtils.verifyAdminToken, (req, res) => {
 // Update Pizza
 router.put("/updatePizza/:id", jwtUtils.verifyAdminToken, (req, res) => {
 
-  const idPizza = req.params.id;
-  if (idPizza == "" || idPizza == undefined || idPizza == null) {
-    return res.status(400).json({ error: "no id" });
+  const idPizza = req.params.id.trim();
+  if (!idPizza) {
+    return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
   }
   const name = req.body.name;
   const price = req.body.price;
@@ -252,11 +245,10 @@ router.put("/updatePizza/:id", jwtUtils.verifyAdminToken, (req, res) => {
             done(null, pizzaFound);
           })
           .catch(function (err) {
-            return res.status(500).json({ error: "unable to verify pizza" });
+          return res.status(500).json(response.responseERROR(response.errorType.PIZZA.UNABLE_TO_VERIFY));
           });
       },
       function (pizzaFound, done) {
-        console.log(pizzaFound);
         if (pizzaFound) {
           pizzaFound
             .update({
@@ -269,22 +261,18 @@ router.put("/updatePizza/:id", jwtUtils.verifyAdminToken, (req, res) => {
               done(pizzaFound);
             })
             .catch(function (err) {
-              res.status(500).json({ error: "cannot update pizza" });
+              return res.status(500).json(response.responseERROR(response.errorType.PIZZA.CANT_UPDATE));
             });
         } else {
-          res.json({ error: "cannot found pizza" });
+          return res.status(500).json(response.responseERROR(response.errorType.PIZZA.NOT_FOUND));
         }
       },
     ],
     function (pizzaFound) {
       if (pizzaFound) {
-        const request = {
-          success: true,
-          pizzaFound: pizzaFound,
-        };
-        return res.status(201).json(request);
+        return res.status(201).json(response.responseOK("", {pizza: pizzaFound}));
       } else {
-        return res.status(500).json({ error: "cannot update Pizza" });
+        return res.status(500).json(response.responseERROR(response.errorType.PIZZA.CANT_UPDATE));
       }
     }
   );

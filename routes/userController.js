@@ -146,7 +146,7 @@ router.post("/login", (req, res) => {
   const email = req.body.email.trim();
   const password = req.body.password.trim();
 
-  if (email == null || password == null || email == "" || password == "") {
+  if (!email || !password) {
     return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
   }
 
@@ -680,7 +680,7 @@ router.get("/getUsers", jwtUtils.verifyAdminToken, (req, res) => {
 router.get("/getUser/:id", jwtUtils.verifyAdminToken, (req, res) => {
   const idUser = req.params.id.trim();
 
-  if (idUser == undefined || idUser == null || idUser == "")
+  if (!idUser)
   return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
 
   models.user

@@ -28,7 +28,7 @@ router.post("/createIngredient", jwtUtils.verifyAdminToken, (req, res) => {
       },
       function (ingredientFound, done) {
         if (ingredientFound) {
-          return res.json(response.responseERROR(response.errorType.INGREDIENT.NOEXIST));
+          return res.json(response.responseERROR(response.errorType.INGREDIENT.EXIST));
         } else {
           models.ingredient
             .create({
@@ -160,14 +160,10 @@ router.delete("/deleteIngredient/:id", jwtUtils.verifyAdminToken, (req, res) => 
                 done(ingredientFound);
               })
               .catch(function (err) {
-                return res
-                  .status(500)
-                  .json(response.responseERROR(response.errorType.INGREDIENT.CANT_DELETE));
+                return res.status(500).json(response.responseERROR(response.errorType.INGREDIENT.CANT_DELETE));
               });
           } else {
-            return res
-              .status(200)
-              .json(response.responseERROR(response.errorType.INGREDIENT.NOEXIST));
+            return res.status(200).json(response.responseERROR(response.errorType.INGREDIENT.NOT_FOUND));
           }
         },
       ],
