@@ -4,15 +4,15 @@ const router = express.Router();
 const models = require("../models");
 const jwtUtils = require('../utils/jwt.utils');
 const asyncLib = require('async');
+const response = require("../utils/response");
 
 // Create Order
 router.post('/createOrder', jwtUtils.verifyToken, (req, res) =>{
   //Getting auth header
   const userId = req.idUser;
   const pizzas = req.body
-
-  if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
+  if (!pizzas) {
+    return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
   }
   
   asyncLib.waterfall([
@@ -28,11 +28,12 @@ router.post('/createOrder', jwtUtils.verifyToken, (req, res) =>{
         if(userFound) {
           done(null, userFound);
         } else {
-          return res.status(500).json({ error: "user not exist in DB" });
+          return res.status(500).json(response.responseERROR(response.errorType.USER.NOEXIST));
         }
       })
       .catch(function (err) {
-          return res.status(500).json({ error: "unable to verify user" });
+        console.log(err);
+        return res.status(500).json(response.responseERROR(response.errorType.USER.UNABLE_TO_VERIFY));
       });
     },
     function(userFound, done){
@@ -50,7 +51,7 @@ router.post('/createOrder', jwtUtils.verifyToken, (req, res) =>{
         done(null, pizzas, userFound);
       })
       .catch(function (err) {
-        return res.status(500).json({ error: "Pizza not exist" });
+        return res.status(500).json(response.responseERROR(response.errorType.PIZZA.NOEXIST));
       });
     },
     function (pizzas, userFound, done) {
@@ -64,10 +65,10 @@ router.post('/createOrder', jwtUtils.verifyToken, (req, res) =>{
         })
         .catch( function (err) {
           console.log(err);
-            return res.json({'error':'unable to create new order'});
+        return res.status(500).json(response.responseERROR(response.errorType.ORDER.CANT_CREATE));
         });
       }else{
-        return res.json({'error':'cannot create order'});
+        return res.status(500).json(response.responseERROR(response.errorType.ORDER.CANT_CREATE));
       }
     },
     function (newOrder, pizzas, done) {
@@ -87,11 +88,11 @@ router.post('/createOrder', jwtUtils.verifyToken, (req, res) =>{
           })
           .catch( function (err) {
             console.log(err);
-            return res.json({'error':'unable to create new reservation'});
+            return res.status(500).json(response.responseERROR(response.errorType.RESERVATION.CANT_CREATE));
           });
         })
       } else{
-        return res.json({'error':'unable to create new order with reservation(s)'});
+        return res.status(500).json(response.responseERROR(response.errorType.RESERVATION.CANT_CREATE));
       }
     },
   ],
@@ -104,7 +105,8 @@ router.post('/createOrder', jwtUtils.verifyToken, (req, res) =>{
         reservation : allReservations
       });
     }else {
-      return res.json({'error':'cannot create order with reservation'});
+      console.log('cannot create order with reservation');
+      return res.status(500).json(response.responseERROR(response.errorType.RESERVATION.CANT_CREATE));
     }
   });
 });
@@ -131,11 +133,11 @@ router.get('/myOrders', jwtUtils.verifyToken, (req,res)=>{
         if(userFound) {
           done(null, userFound);
         } else {
-          return res.status(500).json({ error: "user not exist in DB" });
+        return res.status(400).json(response.responseERROR(response.errorType.USER.NOEXIST));
         }
       })
       .catch(function (err) {
-          return res.status(500).json({ error: "unable to verify user" });
+        return res.status(500).json(response.responseERROR(response.errorType.USER.UNABLE_TO_VERIFY));
       });
     },
     function (userFound) {
@@ -155,17 +157,13 @@ router.get('/myOrders', jwtUtils.verifyToken, (req,res)=>{
         }).then(async function (orderReservation) {
           if (orderReservation) {
             await getTotalAmount(orderReservation,null, true);
-            const request = {
-              success:true,
-              orderReservation : orderReservation
-            }
-            return res.status(200).json(request);
+            return res.status(200).json(response.responseOK("", {orderReservation: orderReservation}));
           } else {
-              res.json({'error':'no order found'});
+            return res.status(400).json(response.responseERROR(response.errorType.ORDER.NOT_FOUND));
           }
           }).catch( function (err) {
               console.log(err);
-              res.json({'error':'invalid fields'});
+              return res.status(500).json(response.responseERROR(response.errorType.INVALID_FIELDS));
           });
       },
     ]
@@ -174,16 +172,13 @@ router.get('/myOrders', jwtUtils.verifyToken, (req,res)=>{
 
 // Get Order
 router.get("/getMyOrder/:id", jwtUtils.verifyToken, (req, res) => {
-  const idOrder = req.params.id;
+  const idOrder = req.params.id.trim();
   const idUser = req.idUser;
 
-  if (idOrder == undefined || idOrder == null || idOrder == "")
-    return res.json({ error: " id not defined" });
-
-  if (idUser < 0) {
-    return res.status(400).json({ error: "wrong token" });
+  if (!idOrder){
+    return res.status(500).json(response.responseERROR(response.errorType.INVALID_FIELDS));
   }
-
+  
   models.order
     .findOne({
       where: {
@@ -202,27 +197,24 @@ router.get("/getMyOrder/:id", jwtUtils.verifyToken, (req, res) => {
     .then(async function (orderFound) {
       if (orderFound) {
         await getTotalAmount(orderFound, null, true);
-        res.status(200).json({
-          success: true,
-          order: orderFound,
-        });
+        return res.status(200).json(response.responseOK("", {order: orderFound}));
       } else {
-        res.json({ error: "order not found" });
+        return res.status(400).json(response.responseERROR(response.errorType.ORDER.NOT_FOUND));
       }
     })
     .catch(function (err) {
       console.log(err);
-      return res.json({ error: "unable to verify order" });
+      return res.status(500).json(response.responseERROR(response.errorType.ORDER.UNABLE_TO_VERIFY));
     });
 });
 
 // Get Order
 router.get("/getOrder/:id", jwtUtils.verifyAdminToken, (req, res) => {
-  const idOrder = req.params.id;
+  const idOrder = req.params.id.trim();
 
-  if (idOrder == undefined || idOrder == null || idOrder == "")
-    return res.json({ error: " id not defined" });
-
+  if (!idOrder){
+    return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
+  }
 
   models.order
     .findOne({
@@ -241,17 +233,14 @@ router.get("/getOrder/:id", jwtUtils.verifyAdminToken, (req, res) => {
     .then(async function (orderFound) {
       if (orderFound) {
         await getTotalAmount(orderFound, null, true);
-        res.status(200).json({
-          success: true,
-          order: orderFound,
-        });
+        return res.status(200).json(response.responseOK("", {order: orderFound}));
       } else {
-        res.json({ error: "order not found" });
+        return res.status(400).json(response.responseERROR(response.errorType.ORDER.NOT_FOUND));
       }
     })
     .catch(function (err) {
       console.log(err);
-      return res.json({ error: "unable to verify order" });
+      return res.status(500).json(response.responseERROR(response.errorType.ORDER.UNABLE_TO_VERIFY));
     });
 });
 
@@ -283,22 +272,23 @@ router.get("/getOrders", jwtUtils.verifyAdminToken,(req, res) => {
       }
       return res.status(200).json(request);
     } else {
-        res.json({'error':'no orders founds'});
+      return res.status(400).json(response.responseERROR(response.errorType.ORDER.NOT_FOUND));
     }
     }).catch( function (err) {
         console.log(err);
-        res.json({'error':'invalid fields'});
+        return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
     });
 });
 
 
 // Get all User Orders
 router.get("/getUserOrders/:id", jwtUtils.verifyAdminToken, (req, res) => {
-  const idUser = req.params.id;
+  const idUser = req.params.id.trim();
 
-  if (idUser == undefined || idUser == null || idUser == "")
-    return res.json({ error: " id not defined" });
-
+  if (!idUser){
+    return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
+  }
+  
   const limit = parseInt(req.query.limit);
   const offset = parseInt(req.query.offset);
   const order = req.query.order;
@@ -316,11 +306,11 @@ router.get("/getUserOrders/:id", jwtUtils.verifyAdminToken, (req, res) => {
         if(userFound) {
           done(null, userFound);
         } else {
-          return res.status(500).json({ error: "user not exist in DB" });
+        return res.status(400).json(response.responseERROR(response.errorType.USER.NOEXIST));
         }
       })
       .catch(function (err) {
-          return res.status(500).json({ error: "unable to verify user" });
+        return res.status(500).json(response.responseERROR(response.errorType.USER.UNABLE_TO_VERIFY));
       });
     },
     function (userFound) {
@@ -340,17 +330,13 @@ router.get("/getUserOrders/:id", jwtUtils.verifyAdminToken, (req, res) => {
       }).then(async function (orderReservation) {
         if (orderReservation) {
           await getTotalAmount(orderReservation, null, true);
-          const request = {
-            success:true,
-            orderReservation : orderReservation
-          }
-          return res.status(200).json(request);
+          return res.status(200).json(response.responseOK("", {orderReservation: orderReservation}));
         } else {
-            res.json({'error':'user orders not founds'});
+          return res.status(400).json(response.responseERROR(response.errorType.ORDER.NOT_FOUND));
         }
         }).catch( function (err) {
             console.log(err);
-            res.json({'error':'invalid fields'});
+          return res.status(500).json(response.responseERROR(response.errorType.INVALID_FIELDS));
         })
       }
     ])
@@ -359,13 +345,9 @@ router.get("/getUserOrders/:id", jwtUtils.verifyAdminToken, (req, res) => {
 // Update Order 
 router.put("/updateOrder/:id", jwtUtils.verifyToken, (req, res) => {
 
-  if (userId < 0) {
-    return res.status(400).json({ error: "wrong token" });
-  }
-
-  const idOrder = req.params.id;
-  if (idOrder == "" || idOrder == undefined || idOrder == null) {
-    return res.status(400).json({ error: "no id" });
+  const idOrder = req.params.id.trim();
+  if (!idOrder) {
+    return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
   }
   const status = req.body.status;
 
@@ -382,14 +364,14 @@ router.put("/updateOrder/:id", jwtUtils.verifyToken, (req, res) => {
             done(null, orderFound);
           })
           .catch(function (err) {
-            return res.status(500).json({ error: "unable to verify order" });
+            return res.status(500).json(response.responseERROR(response.errorType.ORDER.UNABLE_TO_VERIFY));
           });
       },
       function (orderFound, done) {
         if (allStatus.includes(status) == true) {  
             done(null, orderFound);
         } else {
-          res.json({ error: "invalid status order" });
+          return res.status(400).json(response.responseERROR(response.errorType.ORDER.INVALID_STATUS));
         }
       },
       function (orderFound, done) {
@@ -402,22 +384,18 @@ router.put("/updateOrder/:id", jwtUtils.verifyToken, (req, res) => {
               done(orderFound);
             })
             .catch(function (err) {
-              res.status(500).json({ error: "cannot update order status" });
+            return res.status(500).json(response.responseERROR(response.errorType.ORDER.CANT_UPDATE_STATUS));
             });
         } else {
-          res.json({ error: "cannot found order" });
+          return res.status(400).json(response.responseERROR(response.errorType.ORDER.NOT_FOUND));
         }
       },
     ],
     function (orderFound) {
       if (orderFound) {
-        const request = {
-          success: true,
-          orderFound: orderFound,
-        };
-        return res.status(201).json(request);
+        return res.status(201).json(response.responseOK("", {order: orderFound}));
       } else {
-        return res.status(500).json({ error: "cannot update order" });
+        return res.status(500).json(response.responseERROR(response.errorType.ORDER.CANT_UPDATE_STATUS));
       }
     }
   );
@@ -425,7 +403,12 @@ router.put("/updateOrder/:id", jwtUtils.verifyToken, (req, res) => {
 
 // User Reservation Delete
 router.delete("/deleteMyOrder/:id", jwtUtils.verifyToken, (req, res) => {
-  const idOrder = req.params.id;
+
+  const idOrder = req.params.id.trim();
+
+  if (!idOrder) {
+    return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS)); 
+  }
 
   asyncLib.waterfall(
     [
@@ -442,9 +425,7 @@ router.delete("/deleteMyOrder/:id", jwtUtils.verifyToken, (req, res) => {
           })
           .catch(function (err) {
             console.log(err);
-            return res
-              .status(500)
-              .json({ error: "unable to verify my order" });
+            return res.status(500).json(response.responseERROR(response.errorType.ORDER.UNABLE_TO_VERIFY));
           });
       },
       function (orderFound, done) {
@@ -459,22 +440,18 @@ router.delete("/deleteMyOrder/:id", jwtUtils.verifyToken, (req, res) => {
               done(orderFound);
             })
             .catch(function (err) {
-              res.status(500).json({ error: "cannot delete my order" });
+            return res.status(500).json(response.responseERROR(response.errorType.ORDER.CANT_DELETE));
             });
         } else {
-          return res.status(200).json({ error: "order not exist" });
+          return res.status(400).json(response.responseERROR(response.errorType.ORDER.NOEXIST));
         }
       },
     ],
     function (orderFound) {
       if (orderFound) {
-        const request = {
-          success: true,
-          idOrder: idOrder,
-        };
-        return res.status(201).json(request);
+        return res.status(200).json(response.responseOK("", {idOrder: idOrder}));
       } else {
-        return res.status(500).json({ error: "cannot delete my order" });
+        return res.status(500).json(response.responseERROR(response.errorType.ORDER.CANT_DELETE));
       }
     }
   );
@@ -483,7 +460,11 @@ router.delete("/deleteMyOrder/:id", jwtUtils.verifyToken, (req, res) => {
 // User Reservation Delete
 router.delete("/deleteOrder/:id", jwtUtils.verifyAdminToken, (req, res) => {
 
-  const idOrder = req.params.id;
+  const idOrder = req.params.id.trim();
+
+  if (!idOrder) {
+    return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
+  }
 
   asyncLib.waterfall(
     [
@@ -499,9 +480,7 @@ router.delete("/deleteOrder/:id", jwtUtils.verifyAdminToken, (req, res) => {
           })
           .catch(function (err) {
             console.log(err);
-            return res
-              .status(500)
-              .json({ error: "unable to verify order" });
+            return res.status(500).json(response.responseERROR(response.errorType.ORDER.UNABLE_TO_VERIFY));
           });
       },
       function (orderFound, done) {
@@ -516,22 +495,18 @@ router.delete("/deleteOrder/:id", jwtUtils.verifyAdminToken, (req, res) => {
               done(orderFound);
             })
             .catch(function (err) {
-              res.status(500).json({ error: "cannot delete order" });
+            return res.status(500).json(response.responseERROR(response.errorType.ORDER.CANT_DELETE));
             });
         } else {
-          return res.status(200).json({ error: "order not exist" });
+          return res.status(400).json(response.responseERROR(response.errorType.ORDER.NOEXIST));
         }
       },
     ],
     function (orderFound) {
       if (orderFound) {
-        const request = {
-          success: true,
-          idOrder: idOrder,
-        };
-        return res.status(201).json(request);
+        return res.status(200).json(response.responseOK("", {idOrder: idOrder}));
       } else {
-        return res.status(500).json({ error: "cannot delete order" });
+        return res.status(500).json(response.responseERROR(response.errorType.ORDER.CANT_DELETE));
       }
     }
   );

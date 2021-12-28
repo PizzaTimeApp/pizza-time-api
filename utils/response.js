@@ -86,5 +86,25 @@ module.exports = {
       CANT_DELETE: "Cannot delete pizza",
       CANT_UPDATE: "Cannot update pizza"
     }),
+    ORDER: Object.freeze({
+      NOT_FOUND: "Order not found",
+      UNABLE_TO_VERIFY: "Unable to verify order",
+      EXIST: "Order already exist",
+      NOEXIST: "Order not exist",
+      CANT_CREATE : "Cannot create order",
+      CANT_DELETE: "Cannot delete order",
+      CANT_UPDATE: "Cannot update order",
+      INVALID_STATUS: "Invalid orde status",
+      CANT_UPDATE_STATUS: "Cannot update order status"
+    }),
+    RESERVATION: Object.freeze({
+      NOT_FOUND: "Reservation not found",
+      UNABLE_TO_VERIFY: "Unable to verify reservation",
+      EXIST: "Reservation already exist",
+      NOEXIST: "Reservarion not exist",
+      CANT_CREATE : "Cannot create reservation",
+      CANT_DELETE: "Cannot delete reservation",
+      CANT_UPDATE: "Cannot update reservation"
+    }),
   }),
 };
