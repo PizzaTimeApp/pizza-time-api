@@ -15,7 +15,7 @@ module.exports = {
           });
 
         const mailOptions = {
-            from: "compte.projetperso@gmail.com", 
+            from: process.env.USER_GMAIL, 
             to: email,
             subject: process.env.SUBJECT_GMAIL,
             html: `<p>Please click on the following link for reset your password :</p><br>
