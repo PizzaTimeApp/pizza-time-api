@@ -178,7 +178,7 @@ router.post("/login", (req, res) => {
 
 // User Profile
 router.get("/profile", jwtUtils.verifyToken, (req, res) => {
-  const userId = req.idUser.trim();
+  const userId = req.idUser;
 
   if (!userId) {
     return res.json(response.responseERROR(response.errorType.INVALID_FIELDS));

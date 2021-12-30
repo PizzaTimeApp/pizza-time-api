@@ -4,28 +4,6 @@ require("dotenv").config();
 
 const response = require("./response");
 
-function getUserId(authorization) {
-  var userId = -1;
-  var token = module.exports.parseAuthorization(authorization);
-  if (token != null) {
-    try {
-      var jwtToken = jwt.verify(token, process.env.JWT_SIGN_SECRET);
-      if (jwtToken != null) userId = jwtToken.userId;
-    } catch (err) {}
-  }
-  return userId;
-}
-function getIsAdmin(authorization) {
-  var isAdmin = -1;
-  var token = module.exports.parseAuthorization(authorization);
-  if (token != null) {
-    try {
-      var jwtToken = jwt.verify(token, process.env.JWT_SIGN_SECRET);
-      if (jwtToken != null) isAdmin = jwtToken.isAdmin;
-    } catch (err) {}
-  }
-  return isAdmin;
-}
 //Exported functions
 module.exports = {
   generateTokenForUser: function (userData) {
@@ -54,7 +32,17 @@ module.exports = {
   parseAuthorization: function (authorization) {
     return authorization != null ? authorization.replace("Bearer ", "") : null;
   },
-  getUserId: getUserId,
+  getUserId: function (authorization) {
+    var userId = -1;
+    var token = module.exports.parseAuthorization(authorization);
+    if (token != null) {
+      try {
+        var jwtToken = jwt.verify(token, process.env.JWT_SIGN_SECRET);
+        if (jwtToken != null) userId = jwtToken.userId;
+      } catch (err) {}
+    }
+    return userId;
+  },
   getUserIdEmailVerify: function (token) {
     var userId = -1;
     if (token != null) {
@@ -65,24 +53,34 @@ module.exports = {
     }
     return userId;
   },
-  getIsAdmin: getIsAdmin,
+  getIsAdmin: function (authorization) {
+    var isAdmin = -1;
+    var token = module.exports.parseAuthorization(authorization);
+    if (token != null) {
+      try {
+        var jwtToken = jwt.verify(token, process.env.JWT_SIGN_SECRET);
+        if (jwtToken != null) isAdmin = jwtToken.isAdmin;
+      } catch (err) {}
+    }
+    return isAdmin;
+  },
   verifyToken: (req, res, next) => {
     const headerAuth = req.headers["authorization"];
-    const idUser = getUserId(headerAuth);
+    const idUser = module.exports.getUserId(headerAuth);
     if (idUser < 0) {
       return res
         .status(401)
         .json(response.responseERROR(response.errorType.WRONG_TOKEN));
     } else {
-      req.isAdmin = getIsAdmin(headerAuth);
+      req.isAdmin = module.exports.getIsAdmin(headerAuth);
       req.idUser = idUser;
       next();
     }
   },
   verifyAdminToken: (req, res, next) => {
     const headerAuth = req.headers["authorization"];
-    const isAdmin = getIsAdmin(headerAuth);
-    const idUser = getUserId(headerAuth);
+    const isAdmin = module.exports.getIsAdmin(headerAuth);
+    const idUser = module.exports.getUserId(headerAuth);
     if (idUser < 0) {
       return res
         .status(401)
