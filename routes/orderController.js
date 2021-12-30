@@ -180,7 +180,7 @@ router.get("/getMyOrder/:id", jwtUtils.verifyToken, (req, res) => {
   }
   
   models.order
-    .findOne({
+    .findAll({
       where: {
         id: idOrder,
         idUser: idUser
@@ -403,7 +403,7 @@ router.put("/updateOrder/:id", jwtUtils.verifyToken, (req, res) => {
 
 // User Reservation Delete
 router.delete("/deleteMyOrder/:id", jwtUtils.verifyToken, (req, res) => {
-
+  const userId = req.idUser;
   const idOrder = req.params.id.trim();
 
   if (!idOrder) {
