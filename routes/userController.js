@@ -220,16 +220,18 @@ router.put("/profile", jwtUtils.verifyToken, (req, res) => {
 
 
   // Params
-  const email = req.body.email.trim();
-  const username = req.body.username.trim();
-  const firstname = req.body.firstname.trim();
-  const lastname = req.body.lastname.trim();
-  const dateOfBirth = req.body.dateOfBirth.trim();
-  const gender = req.body.gender.trim();
-  const phone = req.body.phone.trim();
-  const address = req.body.address.trim();
-  const city = req.body.city.trim();
-  const zip = req.body.zip.trim();
+  const email = req.body.email ? req.body.email.trim() : null;
+  const username = req.body.username ? req.body.username.trim() : null;
+  const firstname = req.body.firstname ? req.body.firstname.trim() : null;
+  const lastname = req.body.lastname ? req.body.lastname.trim() : null;
+  const dateOfBirth = req.body.dateOfBirth ? req.body.dateOfBirth.trim() : null;
+  const gender = req.body.gender ? req.body.gender.trim() : null;
+  const phone = req.body.phone ? req.body.phone.trim() : null;
+  const address = req.body.address ? req.body.address.trim() : null;
+  const city = req.body.city ? req.body.city.trim() : null;
+  const zip = req.body.zip ? req.body.zip.trim() : null;
+  
+  
 
   if (username) {
     if (username.length < 3 || username.length >= 17) {
