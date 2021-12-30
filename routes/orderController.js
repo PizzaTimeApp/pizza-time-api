@@ -594,12 +594,12 @@ const getTotalAmount = function (allReservations, newOrder = null, isGet) {
           })
         });
       } else {
-        let orderReservations = allReservations.orderReservations;
+        let orderReservations = allReservations[0].orderReservations;
         orderReservations.forEach(async (orderReservation) => {
-          let quantity = orderReservation.quantity;
-          let price = orderReservation.pizza.price;
+          let quantity = orderReservation.dataValues.quantity;
+          let price = orderReservation.dataValues.pizza.price;
           totalAmount += (price * quantity);
-          allReservations.dataValues.totalAmount = totalAmount;
+          allReservations[0].dataValues.totalAmount = totalAmount;
           x++;
           if (x >= orderReservations.length) {
             totalAmount = 0;
