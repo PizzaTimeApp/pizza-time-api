@@ -9,7 +9,7 @@ module.exports = {
   generateTokenForUser: function (userData) {
     return jwt.sign(
       {
-        userId: userData.id,
+        idUser: userData.id,
         isAdmin: userData.isAdmin,
       },
       process.env.JWT_SIGN_SECRET,
@@ -21,7 +21,7 @@ module.exports = {
   generateTokenForResetPasswordUser: function (userData) {
     return jwt.sign(
       {
-        userId: userData.id,
+        idUser: userData.id,
       },
       process.env.JWT_RESET_PASSWORD_SECRET,
       {
@@ -33,25 +33,25 @@ module.exports = {
     return authorization != null ? authorization.replace("Bearer ", "") : null;
   },
   getUserId: function (authorization) {
-    var userId = -1;
+    var idUser = -1;
     var token = module.exports.parseAuthorization(authorization);
     if (token != null) {
       try {
         var jwtToken = jwt.verify(token, process.env.JWT_SIGN_SECRET);
-        if (jwtToken != null) userId = jwtToken.userId;
+        if (jwtToken != null) idUser = jwtToken.idUser;
       } catch (err) {}
     }
-    return userId;
+    return idUser;
   },
   getUserIdEmailVerify: function (token) {
-    var userId = -1;
+    var idUser = -1;
     if (token != null) {
       try {
         var jwtToken = jwt.verify(token, process.env.JWT_RESET_PASSWORD_SECRET);
-        if (jwtToken != null) userId = jwtToken.userId;
+        if (jwtToken != null) idUser = jwtToken.idUser;
       } catch (err) {}
     }
-    return userId;
+    return idUser;
   },
   getIsAdmin: function (authorization) {
     var isAdmin = -1;

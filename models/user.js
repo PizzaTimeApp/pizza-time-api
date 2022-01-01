@@ -10,14 +10,10 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // models.user.hasMany(models.resetPasswordRequest);
-      // models.user.hasMany(models.reservation);
-      // models.user.hasMany(models.resetPasswordRequest);
       models.user.hasMany(models.order, {
         onDelete: 'cascade',
         foreignKey: 'id'
       });
-      // models.user.belongsToMany(Pizza, { through: 'reservation' });
     }
   };
   user.init({

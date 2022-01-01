@@ -1,4 +1,3 @@
-// Import
 const express = require("express");
 
 // Initialize Server

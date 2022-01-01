@@ -1,4 +1,3 @@
-// Imports
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
@@ -132,7 +131,7 @@ router.post("/register", (req, res) => {
     ],
     function (newUser) {
       if (newUser) {
-        return res.status(201).json(response.responseOK("", {userId: newUser.id}));
+        return res.status(201).json(response.responseOK("", {idUser: newUser.id}));
       } else {
         return res.status(400).json(response.responseERROR(response.errorType.USER.CANT_CREATE));
       }
@@ -161,7 +160,7 @@ router.post("/login", (req, res) => {
           userFound.password,
           function (errBycrypt, resBycrypt) {
             if (resBycrypt) {
-              return res.status(200).json(response.responseOK("", {userId : userFound.id, token : jwtUtils.generateTokenForUser(userFound)}));
+              return res.status(200).json(response.responseOK("", {idUser : userFound.id, token : jwtUtils.generateTokenForUser(userFound)}));
             } else {
               return res.status(200).json(response.responseERROR(response.errorType.USER.INVALID_PASSWORD));
             }
@@ -178,9 +177,9 @@ router.post("/login", (req, res) => {
 
 // User Profile
 router.get("/profile", jwtUtils.verifyToken, (req, res) => {
-  const userId = req.idUser;
+  const idUser = req.idUser;
 
-  if (!userId) {
+  if (!idUser) {
     return res.json(response.responseERROR(response.errorType.INVALID_FIELDS));
   }
 
@@ -200,7 +199,7 @@ router.get("/profile", jwtUtils.verifyToken, (req, res) => {
         `zip`,
         `createdAt`,
       ],
-      where: { id: userId },
+      where: { id: idUser },
     })
     .then(function (user) {
       if (user) {
@@ -216,7 +215,7 @@ router.get("/profile", jwtUtils.verifyToken, (req, res) => {
 
 // User Update Profile
 router.put("/profile", jwtUtils.verifyToken, (req, res) => {
-  const userId = req.idUser;
+  const idUser = req.idUser;
 
 
   // Params
@@ -287,7 +286,7 @@ router.put("/profile", jwtUtils.verifyToken, (req, res) => {
               `city`,
               `zip`,
             ],
-            where: { id: userId },
+            where: { id: idUser },
           })
           .then(function (userFound) {
             done(null, userFound);
@@ -335,7 +334,7 @@ router.put("/profile", jwtUtils.verifyToken, (req, res) => {
 
 // User Update Password
 router.put("/updatePassword", jwtUtils.verifyToken, (req, res) => {
-  const userId = req.idUser
+  const idUser = req.idUser
 
   // Params
   const password = req.body.password.trim();
@@ -355,7 +354,7 @@ router.put("/updatePassword", jwtUtils.verifyToken, (req, res) => {
         models.user
           .findOne({
             attributes: [`id`],
-            where: { id: userId },
+            where: { id: idUser },
           })
           .then(function (userFound) {
             done(null, userFound);
@@ -395,7 +394,7 @@ router.put("/updatePassword", jwtUtils.verifyToken, (req, res) => {
     ],
     function (userFound) {
       if (userFound) {
-        return res.status(201).json(response.responseOK("", {userId: userId, updatedAt: userFound.updatedAt}));
+        return res.status(201).json(response.responseOK("", {idUser: idUser, updatedAt: userFound.updatedAt}));
       } else {
         return res.status(500).json(response.responseERROR(response.errorType.USER.CANT_UPDATE_PASSWORD));
       }
@@ -405,14 +404,14 @@ router.put("/updatePassword", jwtUtils.verifyToken, (req, res) => {
 
 // User Delete
 router.delete("/profile", jwtUtils.verifyToken, (req, res) => {
-  const userId = req.idUser
+  const idUser = req.idUser
 
   asyncLib.waterfall(
     [
       function (done) {
         models.user
           .findOne({
-            where: { id: userId },
+            where: { id: idUser },
           })
           .then(function (userFound) {
             done(null, userFound);
@@ -426,7 +425,7 @@ router.delete("/profile", jwtUtils.verifyToken, (req, res) => {
           userFound
             .destroy({
               where: {
-                id: userId,
+                id: idUser,
               },
             })
             .then(function (userFound) {
@@ -442,7 +441,7 @@ router.delete("/profile", jwtUtils.verifyToken, (req, res) => {
     ],
     function (userFound) {
       if (userFound) {
-        return res.status(200).json(response.responseOK("",{ userId: userId}));
+        return res.status(200).json(response.responseOK("",{ idUser: idUser}));
       } else {
         return res.status(500).json(response.responseERROR(response.errorType.USER.CANT_DELETE));
       }
@@ -508,7 +507,7 @@ router.post("/requestEmailPassword", (req, res) => {
     ],
     function (resetPasswordRequest) {
       if (resetPasswordRequest) {
-        return res.status(200).json(response.responseOK("", {userId: resetPasswordRequest.idUser}));
+        return res.status(200).json(response.responseOK("", {idUser: resetPasswordRequest.idUser}));
       } else {
         return res.status(500).json(response.responseERROR(response.errorType.USER.UNABLE_TO_VERIFY_EMAIL));
       }
@@ -520,11 +519,11 @@ router.post("/requestEmailPassword", (req, res) => {
 router.put("/resetPassword/:token", (req, res) => {
   // Params
   const token = req.params.token;
-  const userId = jwtUtils.getUserIdEmailVerify(token);
+  const idUser = jwtUtils.getUserIdEmailVerify(token);
   const password = req.body.password.trim();
   const confirmPassword = req.body.confirmPassword.trim();
 
-  if (userId < 0) {
+  if (idUser < 0) {
     return res.status(400).json(response.responseERROR(response.errorType.WRONG_TOKEN));
   }
 
@@ -541,7 +540,7 @@ router.put("/resetPassword/:token", (req, res) => {
         models.user
           .findOne({
             attributes: [`id`],
-            where: { id: userId },
+            where: { id: idUser },
           })
           .then(function (userFound) {
             done(null, userFound);
@@ -579,7 +578,7 @@ router.put("/resetPassword/:token", (req, res) => {
     ],
     function (userFound) {
       if (userFound) {
-        return res.status(200).json(response.responseOK("",{userId: userId, updatedAt: userFound.updatedAt}));
+        return res.status(200).json(response.responseOK("",{idUser: idUser, updatedAt: userFound.updatedAt}));
       } else {
         return res.status(500).json(response.responseERROR(response.errorType.USER.CANT_RESET_PASSWORD));
       }
@@ -631,7 +630,7 @@ router.delete("/deleteUser/:id", jwtUtils.verifyAdminToken, (req, res) => {
     ],
     function (userFound) {
       if (userFound) {
-        return res.status(201).json(response.responseOK("",{userId: idDeletedUser}));
+        return res.status(201).json(response.responseOK("",{idUser: idDeletedUser}));
       } else {
         return res.status(500).json(response.responseERROR(response.errorType.USER.CANT_DELETE));
       }

@@ -1,5 +1,4 @@
 const express = require('express');
-const app = express();
 const router = express.Router();
 const models = require("../models");
 const jwtUtils = require('../utils/jwt.utils');
@@ -9,7 +8,7 @@ const response = require("../utils/response");
 // Create Order
 router.post('/createOrder', jwtUtils.verifyToken, (req, res) =>{
   //Getting auth header
-  const userId = req.idUser;
+  const idUser = req.idUser;
   const pizzas = req.body
   if (!pizzas) {
     return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
@@ -22,7 +21,7 @@ router.post('/createOrder', jwtUtils.verifyToken, (req, res) =>{
           attributes: [
           `id`,
           ],
-          where: { id: userId },
+          where: { id: idUser },
       })
       .then(function (userFound) {
         if(userFound) {
@@ -57,7 +56,7 @@ router.post('/createOrder', jwtUtils.verifyToken, (req, res) =>{
     function (pizzas, userFound, done) {
       if(userFound){
         models.order.create({
-          idUser: userId,
+          idUser: idUser,
           status: "new", 
         })
         .then(function (newOrder) {
@@ -117,7 +116,7 @@ router.get('/myOrders', jwtUtils.verifyToken, (req,res)=>{
   const offset = parseInt(req.query.offset);
   const order = req.query.order;
 
-  const userId = req.idUser;
+  const idUser = req.idUser;
 
   asyncLib.waterfall(
     [
@@ -127,7 +126,7 @@ router.get('/myOrders', jwtUtils.verifyToken, (req,res)=>{
           attributes: [
           `id`,
           ],
-          where: { id: userId },
+          where: { id: idUser },
       })
       .then(function (userFound) {
         if(userFound) {
@@ -145,7 +144,7 @@ router.get('/myOrders', jwtUtils.verifyToken, (req,res)=>{
           order:[(order!=null)? order.split(':'): ['createdAt','DESC']],
           limit:(!isNaN(limit))? limit :null,
           offset:(!isNaN(offset))? offset: null,
-          where: {idUser : userId},
+          where: {idUser : idUser},
           include: [{
               model: models.orderReservation,
               attributes: ['id', 'idPizza', 'quantity'],
@@ -403,7 +402,7 @@ router.put("/updateOrder/:id", jwtUtils.verifyToken, (req, res) => {
 
 // User Reservation Delete
 router.delete("/deleteMyOrder/:id", jwtUtils.verifyToken, (req, res) => {
-  const userId = req.idUser;
+  const idUser = req.idUser;
   const idOrder = req.params.id.trim();
 
   if (!idOrder) {
@@ -417,7 +416,7 @@ router.delete("/deleteMyOrder/:id", jwtUtils.verifyToken, (req, res) => {
           .findOne({
             where: { 
               id: idOrder,
-              idUser: userId
+              idUser: idUser
             },
           })
           .then(function (orderFound) {
