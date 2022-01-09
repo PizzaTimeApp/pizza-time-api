@@ -1,5 +1,8 @@
 // Import
 const express = require("express");
+const swaggerJsdoc = require("swagger-jsdoc");
+const swaggerUi = require("swagger-ui-express");
+// const swaggerDocument = require('./swagger.json');
 const path = require("path");
 const bodyParse = require("body-parser");
 const userController = require("./routes/userController");
@@ -10,9 +13,33 @@ const orderController = require("./routes/orderController");
 // Initialize Server
 const server = express();
 
-// Body Parser Configuration
-// server.use(bodyParse.urlencoded({ extended: true}));
-// server.use(bodyParse.json);
+// Config Swaggger Api 
+
+const options = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Express API with Swagger",
+      version: "0.1.0",
+      description:
+        "This is a simple CRUD API application made with Express and documented with Swagger",
+      contact: {
+        name: "Quentin MENDEL",
+        url: "https://www.qmendel.fr/",
+      },
+      // contact: {
+      //   name: "Thomas DUBUIS",
+      //   url: "",
+      // },
+    },
+    servers: [
+      {
+        url: "http://localhost:8101",
+      },
+    ],
+  },
+  apis: ["./routes/*.js"],
+};
 
 server.use(express.urlencoded({ extended: true }));
 server.use(express.json());
@@ -21,7 +48,7 @@ server.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
   );
   next();
 });
@@ -31,6 +58,10 @@ server.get("/", function (req, res) {
   res.setHeader("Content-Type", "text/html");
   res.sendFile(path.join(__dirname, "./public", "index.html"));
 });
+
+const specs = swaggerJsdoc(options);
+server.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+
 
 // Default Route
 server.use("/api/user", userController);

@@ -30,7 +30,7 @@ router.post("/register", (req, res) => {
   const phone = req.body.phone.trim();
   const address = req.body.address.trim();
   const city = req.body.city.trim();
-  const zip = req.body.zip.trim();
+  const zip = req.body.zip;
 
   userForm = [
     email,
@@ -518,6 +518,7 @@ router.post("/requestEmailPassword", (req, res) => {
 // Reset user Password
 router.put("/resetPassword/:token", (req, res) => {
   // Params
+  
   const token = req.params.token;
   const idUser = jwtUtils.getUserIdEmailVerify(token);
   const password = req.body.password.trim();

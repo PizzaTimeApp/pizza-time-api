@@ -5,7 +5,6 @@ const jwtUtils = require("../utils/jwt.utils");
 const asyncLib = require("async");
 const response = require("../utils/response");
 
-//Create ingredient
 router.post("/createIngredient", jwtUtils.verifyAdminToken, (req, res) => {
   const name = req.body.name.trim();
   if (!name) {

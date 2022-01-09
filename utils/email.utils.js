@@ -19,7 +19,7 @@ module.exports = {
             to: email,
             subject: process.env.SUBJECT_GMAIL,
             html: `<p>Please click on the following link for reset your password :</p><br>
-            <a href="${process.env.BASE_URL_GMAIL}/resetpassword/${token}">${process.env.BASE_URL_GMAIL}/resetpassword/${token}</a>`
+            <a href="${process.env.BASE_URL_GMAIL}/reset-password/${token}">${process.env.BASE_URL_GMAIL}/reset-password/${token}</a>`
         };
 
         return new Promise(function(resolve, reject) {
