@@ -1,5 +1,6 @@
 // Import
 const express = require("express");
+const cors = require('cors')
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 // const swaggerDocument = require('./swagger.json');
@@ -9,6 +10,7 @@ const userController = require("./routes/userController");
 const pizzaController = require("./routes/pizzaController");
 const ingredientController = require("./routes/ingredientController");
 const orderController = require("./routes/orderController");
+const { ServerResponse } = require("http");
 
 // Initialize Server
 const server = express();
@@ -43,12 +45,14 @@ const options = {
 
 server.use(express.urlencoded({ extended: true }));
 server.use(express.json());
+server.use(cors());
 
 server.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
+  res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE', 'OPTIONS');
   res.header(
     "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Allow-Headers",
   );
   next();
 });

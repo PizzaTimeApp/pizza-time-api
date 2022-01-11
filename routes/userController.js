@@ -228,7 +228,7 @@ router.put("/profile", jwtUtils.verifyToken, (req, res) => {
   const phone = req.body.phone ? req.body.phone.trim() : null;
   const address = req.body.address ? req.body.address.trim() : null;
   const city = req.body.city ? req.body.city.trim() : null;
-  const zip = req.body.zip ? req.body.zip.trim() : null;
+  const zip = req.body.zip ? req.body.zip : null;
   
   
 
