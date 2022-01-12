@@ -62,7 +62,7 @@ router.get("/getIngredients", jwtUtils.verifyToken, (req, res) => {
   models.ingredient
     .findAll({
       attributes: ["id", "name"],
-      order: [order != null ? order.split(":") : ["title", "ASC"]],
+      order: [order != null ? order.split(":") : ["name", "ASC"]],
       limit: !isNaN(limit) ? limit : null,
       offset: !isNaN(offset) ? offset : null,
     })
