@@ -155,7 +155,6 @@ router.get('/myOrders', jwtUtils.verifyToken, (req,res)=>{
           }]
         }).then(async function (orderReservation) {
           if (orderReservation) {
-            console.log(orderReservation);
             await getTotalAmount(orderReservation,null, true);
             return res.status(200).json(response.responseOK("", {orderReservation: orderReservation}));
           } else {
@@ -585,18 +584,17 @@ const getTotalAmount = function (allReservations, newOrder = null, isGet) {
             let quantity = orderReservation.quantity;
             let price = orderReservation.pizza.price;
             totalAmount += (price * quantity);
-            reservation.dataValues.totalAmount = totalAmount;
             x++;
             if (x >= orderReservations.length) {
+              x=0;
+              reservation.dataValues.totalAmount = totalAmount;
               totalAmount = 0;
               resolve();
             }
           })
         });
       } else {
-        let test = allReservations[0].orderReservations;
-        var orderReservations = test;
-        
+        let orderReservations = allReservations[0].orderReservations;
         orderReservations.forEach(async (orderReservation) => {
           let quantity = orderReservation.dataValues.quantity;
           let price = orderReservation.dataValues.pizza.price;
