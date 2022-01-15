@@ -49,26 +49,26 @@ router.get("/getPizzas", jwtUtils.verifyToken, (req, res) => {
 });
 
 //get image Pizza
-router.get("/getImagePizza/:image", jwtUtils.verifyToken, function (req, res) {
+router.get("/getImagePizza/:image", function (req, res) {
 
   const image = req.params.image.trim();
   if (!image) {
     return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
   }
-  res.setHeader("Content-Type", "image/*");
+  res.setHeader("Content-Type", "image/png");
   res.sendFile(path.join(__dirname + "/../uploads/imagePizzas", image));
 });
 
 //Create Pizza
-router.post("/createPizza",jwtUtils.verifyToken, upload.single("image"), (req, res) => {
+router.post("/createPizza",jwtUtils.verifyToken, (req, res) => {
   const isAdmin = req.isAdmin
 
   const name = req.body.name.trim();
   const price = req.body.price.trim();
-  const image = req.file.filename.trim();
+  const imageData = req.body.image.trim();
   const content = req.body.content.trim();
-  var ingredients = req.body.ingredients.trim();
-
+  var ingredients = req.body.ingredients;
+  const image = createImage(imageData);
   if (!name || !price || !image || !content || !ingredients) {
     return res.status(400).json(response.responseERROR(response.errorType.INVALID_FIELDS));
   }
@@ -82,7 +82,7 @@ router.post("/createPizza",jwtUtils.verifyToken, upload.single("image"), (req, r
         deletePizzaImage(image);
         return res.status(400).json(response.responseERROR(response.errorType.PIZZA.EXIST));
       } else {
-        ingredients = ingredients.split(",");
+        // ingredients = ingredients.split(",");
 
         if (await ingredientNotExist(ingredients)) {
           console.log("Ingredient not exist");
@@ -316,5 +316,18 @@ const deletePizzaImage = function (fileName) {
     }
   });
 };
+const createImage = function(image) {
 
+  // Remove header
+  let base64Image = image.split(';base64,').pop();
+  let name = Math.random().toString(16).substr(2, 8) + '.png';
+  fs.writeFile(__dirname + "/../uploads/imagePizzas/" + name, base64Image, {encoding: 'base64'}, function(err) {
+    console.log('PizzaImage created');
+    if (err) {
+      console.log('Erreur creation de PizzaImage');
+      console.log(err);
+    }
+  });
+  return name;
+}
 module.exports = router;

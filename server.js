@@ -43,8 +43,8 @@ const options = {
   apis: ["./routes/*.js"],
 };
 
-server.use(express.urlencoded({ extended: true }));
-server.use(express.json());
+server.use(express.urlencoded({limit: "50mb", extended: true, parameterLimit:500000}));
+server.use(express.json({ limit: "50mb" }));
 server.use(cors());
 
 server.use(function (req, res, next) {
