@@ -64,7 +64,7 @@ router.post("/createPizza",jwtUtils.verifyToken, (req, res) => {
   const isAdmin = req.isAdmin
 
   const name = req.body.name.trim();
-  const price = req.body.price.trim();
+  const price = req.body.price;
   const imageData = req.body.image.trim();
   const content = req.body.content.trim();
   var ingredients = req.body.ingredients;
